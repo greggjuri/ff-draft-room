@@ -1,4 +1,4 @@
-"""Unit tests for app.utils.data_loader."""
+"""Unit tests for utils.data_loader."""
 
 from unittest.mock import patch
 
@@ -7,7 +7,7 @@ import pytest
 
 # Patch st.warning/st.error before importing data_loader
 with patch("streamlit.warning"), patch("streamlit.error"), patch("streamlit.cache_data", lambda f: f):
-    from app.utils.data_loader import load_position_year
+    from utils.data_loader import load_position_year
 
 EXPECTED_COLUMNS = [
     "rank", "name", "team", "position", "year", "gp", "ppg", "total_pts",

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.pages import analysis, history, live_draft, war_room
-from app.utils.data_loader import load_all_players
+from pages import analysis, history, live_draft, war_room
+from utils.data_loader import load_all_players
 
 st.set_page_config(
     page_title="FF Draft Room",

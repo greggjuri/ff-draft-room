@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from app.utils.constants import CSV_COLUMN_MAP, POSITIONS, SCHEMA_COLUMNS, YEARS
+from utils.constants import CSV_COLUMN_MAP, POSITIONS, SCHEMA_COLUMNS, YEARS
 
 DEFAULT_DATA_DIR: Path = Path(__file__).parent.parent.parent / "data" / "players"
 
