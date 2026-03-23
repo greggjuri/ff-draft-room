@@ -1,0 +1,58 @@
+"""FF Draft Room — Streamlit entry point and navigation."""
+
+from pathlib import Path
+
+import streamlit as st
+
+from app.pages import analysis, history, live_draft, war_room
+from app.utils.data_loader import load_all_players
+
+st.set_page_config(
+    page_title="FF Draft Room",
+    page_icon="\U0001f3c8",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# -- Sidebar ------------------------------------------------------------------
+
+with st.sidebar:
+    # Logo with graceful fallback
+    logo_path = Path(__file__).parent.parent / "assets" / "ff-logo.jpg"
+    if logo_path.exists():
+        st.image(str(logo_path), width=200)
+    else:
+        st.title("\U0001f3c8 FF Draft Room")
+
+    page = st.radio(
+        "Navigation",
+        ["War Room", "History", "Analysis", "Live Draft"],
+        label_visibility="collapsed",
+    )
+
+# -- Data loading --------------------------------------------------------------
+
+df = load_all_players()
+
+if "df" not in st.session_state:
+    st.session_state.df = df
+
+# -- Sidebar footer ------------------------------------------------------------
+
+with st.sidebar:
+    n = len(df)
+    if n > 0:
+        st.caption(f"\u2713 {n} player-seasons loaded")
+    else:
+        st.warning("No player data found. Add CSV files to data/players/.")
+
+# -- Page routing --------------------------------------------------------------
+
+PAGES = {
+    "War Room": war_room,
+    "History": history,
+    "Analysis": analysis,
+    "Live Draft": live_draft,
+}
+
+PAGES[page].render()

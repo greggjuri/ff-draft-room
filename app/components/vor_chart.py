@@ -1,0 +1,1 @@
+"""VOR visualization component."""
