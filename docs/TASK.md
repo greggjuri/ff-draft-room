@@ -6,7 +6,7 @@
 *(none)*
 
 ### Up Next
-- [ ] `init-history-browser.md` — Historical stats browser page
+- [ ] `init-war-room-rankings.md` — Rankings editor
 
 ---
 
@@ -14,7 +14,7 @@
 
 ### Phase 1a — Foundation (start here)
 - [x] `init-project-setup.md` — requirements.txt, .streamlit/config.toml, data_loader.py, main.py skeleton
-- [ ] `init-history-browser.md` — History page: position/year tabs, sortable table, search, filters
+- [x] `init-history-browser.md` — History page: position/year tabs, sortable table, search, filters
 
 ### Phase 1b — Core War Room
 - [ ] `init-war-room-rankings.md` — Rankings editor: load baseline from history, reorder, assign tiers, save profile
@@ -37,6 +37,7 @@
 
 ## Recently Completed
 
+- [x] `init-history-browser.md` — History page with year/position filtering, search, sortable table (2026-03-22)
 - [x] `init-project-setup.md` — Scaffold, deps, dark theme, data_loader, main.py, page stubs, tests (2026-03-22)
 
 ---
@@ -78,4 +79,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-03-22 (project setup complete)*
+*Last updated: 2026-03-22 (history browser complete)*
