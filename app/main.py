@@ -30,11 +30,15 @@ html, body, [class*="css"] { font-size: 11px !important; }
 
 /* Vertical divider between columns */
 [data-testid="column"] {
-    border-right: 1px solid #1E3A5F;
-    padding-right: 20px !important;
-    padding-left: 20px !important;
+    border-right: 2px solid #1E3A5F !important;
+    padding-right: 28px !important;
+    padding-left: 28px !important;
+    margin-right: 8px !important;
 }
-[data-testid="column"]:last-child { border-right: none; }
+[data-testid="column"]:last-child {
+    border-right: none !important;
+    margin-right: 0 !important;
+}
 
 /* Compact buttons — kill padding, tighten height */
 .stButton > button {
@@ -47,12 +51,12 @@ html, body, [class*="css"] { font-size: 11px !important; }
 
 /* Player name — visible box, fixed height, left-aligned text */
 .stButton > button[kind="secondary"] {
-    background: #C8D8E8 !important;
-    border: 1px solid #A0B8CC !important;
+    background: #1A3A5C !important;
+    border: 1px solid #2A5A8C !important;
     border-radius: 4px !important;
     text-align: left !important;
     padding: 2px 8px !important;
-    color: #0D1B2A !important;
+    color: #E8E8E8 !important;
     width: 100% !important;
     height: 28px !important;
     white-space: nowrap !important;
@@ -61,8 +65,8 @@ html, body, [class*="css"] { font-size: 11px !important; }
 }
 .stButton > button[kind="secondary"]:hover {
     background: #0076B6 !important;
-    color: #FFFFFF !important;
     border-color: #0076B6 !important;
+    color: #FFFFFF !important;
 }
 
 /* Kill gap between rows */
