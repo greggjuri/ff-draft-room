@@ -1,88 +1,107 @@
 # FF Draft Room - Task Tracker
 
-## Current Sprint: Phase 1b — War Room Core
+## Current Sprint: Phase 1b — Stack Migration
 
 ### In Progress
-_None_
+- [ ] `04-init-fastapi-react-migration.md` — Retire Streamlit, build FastAPI + React
 
 ---
 
 ## Backlog
 
-### Phase 1b — War Room Core (current focus)
-- [ ] `03-init-war-room-core.md` — Full War Room page:
-  - Overall + QB + RB + WR + TE tabs
-  - Each row: overall rank · position rank · player · team · ▲▼ buttons
-  - Click player name → `st.dialog` popup with notes text area + Save/Close
-  - Manual Save button → writes to `data/rankings/default.json`
-  - First launch: auto-seed from 2025 total_pts via data_loader
+### Phase 1b — Migration (current focus)
+- [ ] `04-init-fastapi-react-migration.md` — Full stack replacement:
+  - FastAPI backend with REST API wrapping existing utils/
+  - Vite + React frontend
+  - Full War Room: QB/RB/WR/TE columns, tier groups, ▲▼ reorder,
+    notes dialog, add player, delete player, save
 
 ### Phase 1c — Polish (future)
-- [ ] `04-init-rankings-profiles.md` — Multiple saved profiles: create, load, copy, delete
-- [ ] Export current rankings to CSV
+- [ ] `05-init-k-dst.md` — Add K and D/ST columns
+- [ ] `06-init-rankings-profiles.md` — Multiple saved profiles
+- [ ] Export rankings to CSV
 
 ### Phase 2 — Live Draft (future)
-- [ ] `05-init-live-draft-tracker.md` — Snake draft board (10-team), mark picks mine/other
-- [ ] `06-init-draft-roster-view.md` — My team view, needs tracker, scarcity alerts
+- [ ] Snake draft board, mark picks mine/other
+- [ ] Best available board
+- [ ] My roster view, needs tracker, scarcity alerts
 
 ---
 
 ## Recently Completed
 
-- [x] `03-init-war-room-core.md` — War Room rankings board
-  - 4-column layout (QB/RB/WR/TE) with tier grouping and visual dividers
-  - ▲▼ reordering with automatic tier reassignment on boundary crossings
-  - Notes dialog, add player dialog, delete confirm dialog
-  - Auto-seeding from 2025 CSV data, JSON persistence
-  - 27 unit tests, 84% coverage on `app/utils/rankings.py`
-  - Sidebar nav simplified to War Room + Live Draft (ADR-005)
+- [x] `03-init-war-room-core.md` — War Room in Streamlit
+  - Commit: `dede688`
+  - 43 tests passing, 84% coverage
+  - All core features working: tiers, reorder, notes, add, delete, save
+  - Retired due to Streamlit UI limitations (CSS/layout constraints)
 
 - [x] `01-init-project-setup.md` — Project scaffold, data loader, Streamlit skeleton
   - Commit: `6a5f313`
-  - 8 tests passing, 81% coverage on `app/utils/`
-  - Known issue: Python 3.9 on system — fixed with `from __future__ import annotations`
+  - 8 tests passing, 81% coverage on app/utils/
 
 ---
 
 ## Dropped / Descoped
 
+- ~~Streamlit UI~~ — **Retired** (2026-03-30)
+  - Reason: Streamlit cannot support the dense, interactive war room layout.
+    Background colors behind widgets, precise CSS control, and custom layouts
+    are not achievable within Streamlit's rendering model.
+  - All Python utility logic (data_loader, rankings, constants) is kept and
+    ported to backend/utils/. Tests unchanged.
+  - ADR-006 documents this decision.
+
 - ~~`02-init-history-browser.md`~~ — **Dropped** (2026-03-30)
-  - Reason: Pivot to rankings-only app. Historical data is seed infrastructure only,
-    not a browsable UI feature. The data loader already handles loading; no history
-    page needed.
-  - PRP was generated (02-prp-history-browser.md) but never executed.
+  - Reason: App is rankings-only. Historical data is seed infrastructure.
 
 ---
 
 ## Architecture Decisions
 
-### Import Convention (Critical)
-Streamlit sets `sys.path` to `app/` at runtime. All imports must be relative to `app/`:
+### Import Convention (Backend)
+All backend Python imports are relative to `backend/`:
 ```python
 # CORRECT
 from utils.constants import POSITIONS
-from pages import war_room
+from utils.rankings import load_or_seed
 
-# WRONG — causes ModuleNotFoundError at runtime
-from app.utils.constants import POSITIONS
+# WRONG
+from backend.utils.constants import POSITIONS
 ```
-This bit us on first launch. All new files must follow this pattern.
 
-### Data Source for Seeding
-Rankings seeded from 2025 `total_pts` (most recent full season).
-Data loader already handles this — `load_all_players()` returns full DataFrame.
-Seeding logic lives in `app/utils/rankings.py`.
+### What Is Kept from Streamlit Version
+- `backend/utils/data_loader.py` — unchanged, fully tested
+- `backend/utils/rankings.py` — unchanged, fully tested
+- `backend/utils/constants.py` — unchanged
+- `tests/` — all 43 tests carry over
 
-### Pivot: History Page Dropped
-Original plan included a History browser page for browsing stats by position/year.
-Dropped in favour of a tighter product: the app is purely a rankings tool.
-Historical data remains as seed source only.
+### What Is Scrapped
+- `app/main.py` — Streamlit entry point
+- `app/pages/` — all Streamlit pages
+- `app/components/` — Streamlit components
+- `.streamlit/config.toml` — Streamlit config
+- All Streamlit CSS injection
 
 ---
 
 ## Notes
 
-### CSV File Naming Convention
+### Running the New Stack
+```bash
+# Backend
+cd ff-draft-room
+source .venv/bin/activate
+uvicorn backend.main:app --reload
+# → localhost:8000
+
+# Frontend (separate terminal)
+cd frontend
+npm run dev
+# → localhost:5173
+```
+
+### CSV File Naming
 ```
 data/players/QB_2020.csv  through  QB_2025.csv
 data/players/RB_2020.csv  through  RB_2025.csv
@@ -90,14 +109,13 @@ data/players/WR_2020.csv  through  WR_2025.csv
 data/players/TE_2020.csv  through  TE_2025.csv
 ```
 
-### League Settings (defaults)
+### League Defaults
 - 10 teams, half-PPR, standard roster
-- Positions tracked: QB, RB, WR, TE
+- Positions: QB, RB, WR, TE (K and D/ST in Phase 1c)
 
-### Known Issues
-- Python 3.9 on system — `Path | None` union syntax unsupported.
-  Fixed globally with `from __future__ import annotations` at top of affected files.
+### Known Issues (Streamlit era — resolved by migration)
+- Python 3.9: `from __future__ import annotations` still required in backend utils
 
 ---
 
-*Last updated: 2026-03-30 (pivot to rankings-only app)*
+*Last updated: 2026-03-30 (pivot to FastAPI + React)*

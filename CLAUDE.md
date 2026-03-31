@@ -1,239 +1,182 @@
-# CLAUDE.md - Claude Code Instructions
+# FF Draft Room - Project Instructions
 
-This file provides project-specific instructions and conventions for Claude Code.
+## What This Is
 
-## Project Overview
+A personal fantasy football draft preparation tool.
+Built for personal use on MacBook Air M1. Runs locally. No cloud, no auth, no external APIs.
 
-**FF Draft Room**: A local Python/Streamlit fantasy football draft preparation and live draft tracking tool.  
-Runs locally on MacBook Air M1. No cloud, no auth, no external APIs required.
+**One purpose**: Build and manage pre-draft player rankings in a **War Room** board.
+Historical FantasyPros data seeds the initial rankings baseline — it is infrastructure, not UI.
 
-**Tech Stack**: Streamlit | Python 3.11+ | Pandas | Plotly | JSON (local persistence)
+**Repository**: github.com/greggjuri/ff-draft-room
+**Also mirrored to**: Gitea self-hosted (home lab)
 
-## Quick Commands
+## Tech Stack
+
+### Backend
+- **FastAPI** — REST API, runs at localhost:8000
+- **Python 3.9+** — `from __future__ import annotations` required for union types
+- **Pandas** — CSV processing
+- **JSON files** — persistence (`data/rankings/`)
+- **pytest + ruff** — testing and linting
+
+### Frontend
+- **React 18 + Vite** — runs at localhost:5173
+- **Plain CSS** — full control, no CSS framework
+- **fetch API** — HTTP calls to FastAPI backend
+
+## Running the App
 
 ```bash
-# Start the app
-cd ff-draft-room && streamlit run app/main.py
+# Terminal 1 — Backend
+source .venv/bin/activate
+uvicorn backend.main:app --reload
 
-# Run tests
-cd ff-draft-room && pytest tests/ --cov=app --cov-report=term-missing
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Lint
-cd ff-draft-room && ruff check app/ tests/
+# Terminal 2 — Frontend
+cd frontend
+npm run dev
 ```
 
-## File Structure
+Open `localhost:5173` in browser.
+
+## Critical Constraints
+
+1. **Local only** — no cloud, no auth, no external API calls at runtime
+2. **File size limit: 500 lines** — split into modules when approaching
+3. **Commit after every feature** — atomic, working commits
+4. **Data source**: FantasyPros half-PPR CSV exports only — no approximations
+5. **No Streamlit** — retired (ADR-006). Do not add Streamlit back.
+
+## Python Import Convention
+
+All backend imports are relative to `backend/`:
+
+```python
+# CORRECT
+from utils.constants import POSITIONS
+from utils.rankings import load_or_seed
+
+# WRONG — breaks at runtime
+from backend.utils.constants import POSITIONS
+```
+
+## What Is NOT in This App
+
+- **No Streamlit** — retired due to UI limitations (ADR-006)
+- **No history browser** — historical data is seed infrastructure only (ADR-005)
+- **No database** — JSON files only (ADR-002)
+- **No drag-and-drop** — Phase 2 consideration
+- **No external API calls** — fully offline (ADR-003)
+
+## Project Structure
 
 ```
 ff-draft-room/
 ├── CLAUDE.md                    # This file
-├── README.md                    # Project readme
-├── requirements.txt             # Python dependencies
-├── .gitignore
-├── docs/
-│   ├── PLANNING.md              # Architecture overview
-│   ├── TASK.md                  # Current tasks
-│   ├── DECISIONS.md             # ADRs
-│   └── TESTING.md               # Testing standards
-├── initials/                    # Feature specifications (init-*.md)
-├── prps/                        # Implementation plans (prp-*.md)
-│   └── templates/
-│       └── prp-template.md
-├── .claude/
-│   └── commands/
-│       ├── generate-prp.md
-│       └── execute-prp.md
 ├── data/
-│   ├── players/                 # Source CSV files (FantasyPros exports)
-│   │   ├── QB_2020.csv ... QB_2025.csv
-│   │   ├── RB_2020.csv ... RB_2025.csv
-│   │   ├── WR_2020.csv ... WR_2025.csv
-│   │   └── TE_2020.csv ... TE_2025.csv
-│   └── rankings/                # Saved ranking profiles (JSON)
-│       └── *.json
-├── app/
-│   ├── main.py                  # Streamlit entry point + navigation
-│   ├── pages/
-│   │   ├── war_room.py          # War Room: rankings editor + tier builder
-│   │   ├── history.py           # Historical stats browser
-│   │   ├── analysis.py          # VOR + positional analysis
-│   │   └── live_draft.py        # Live draft tracker (Phase 2)
-│   ├── components/
-│   │   ├── player_table.py      # Reusable sortable player table
-│   │   ├── tier_editor.py       # Tier assignment UI
-│   │   └── vor_chart.py         # VOR visualization
-│   └── utils/
-│       ├── data_loader.py       # CSV parsing + data normalization
-│       ├── rankings.py          # Rankings save/load/manage
-│       ├── vor.py               # VOR calculation logic
-│       └── constants.py         # Positions, scoring, tier defaults
+│   ├── players/                 # FantasyPros CSVs (read-only)
+│   └── rankings/                # JSON profiles (user data)
+├── backend/
+│   ├── main.py                  # FastAPI app + CORS
+│   ├── routers/
+│   │   └── rankings.py          # All /api/rankings/* routes
+│   └── utils/                   # Core logic — DO NOT break these
+│       ├── data_loader.py       ✅ tested
+│       ├── rankings.py          ✅ tested
+│       └── constants.py        ✅ tested
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.jsx
+│       ├── api/rankings.js      # All fetch() calls
+│       └── components/
+│           ├── WarRoom.jsx
+│           ├── PositionColumn.jsx
+│           ├── TierGroup.jsx
+│           ├── PlayerRow.jsx
+│           ├── NotesDialog.jsx
+│           ├── AddPlayerDialog.jsx
+│           └── DeleteConfirmDialog.jsx
 └── tests/
-    ├── test_data_loader.py
-    ├── test_rankings.py
-    └── test_vor.py
+    ├── test_data_loader.py      ✅ 8 passing
+    ├── test_rankings.py         ✅ 27 passing
+    └── test_vor.py              # Future
 ```
 
-## Critical Rules
+## API Routes
 
-### 1. File Size Limit
-- **Maximum 500 lines per file**
-- When approaching limit: split into modules
-- Prefer many small files over few large files
-
-### 2. Commit Strategy
-- **Commit after every feature** — atomic, working commits
-- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
-- Each commit should leave the app runnable
-
-### 3. Testing Requirements
-- **Unit test coverage**: 80% minimum for `utils/`
-- Run tests before committing
-- Manual Streamlit testing after each page feature
-
-### 4. Documentation
-- Update `docs/TASK.md` when starting/completing tasks
-- Create ADR in `docs/DECISIONS.md` for architectural choices
-- Add learnings when debugging issues
-
-## Coding Conventions
-
-### Python (Streamlit + Pandas)
-
-```python
-# Type hints everywhere
-def load_players(position: str, year: int) -> pd.DataFrame:
-    """Load and normalize player data for a given position and year."""
-    pass
-
-# Use dataclasses for structured data
-@dataclass
-class PlayerRanking:
-    rank: int
-    name: str
-    team: str
-    position: str
-    year: int
-    gp: int
-    ppg: float
-    total_pts: float
-    tier: int = 1
-    notes: str = ""
-
-# Streamlit session state pattern
-if "rankings" not in st.session_state:
-    st.session_state.rankings = load_default_rankings()
-
-# Pandas — explicit dtypes, no silent coercions
-df = pd.read_csv(path, dtype={"GP": int, "AVG": float, "TTL": float})
+```
+GET    /api/rankings
+POST   /api/rankings/save
+POST   /api/rankings/seed
+GET    /api/rankings/{position}
+POST   /api/rankings/{position}/reorder      { rank_a, rank_b }
+POST   /api/rankings/{position}/add          { name, team, tier }
+DELETE /api/rankings/{position}/{rank}
+PUT    /api/rankings/{position}/{rank}/notes { notes }
 ```
 
-### Streamlit Conventions
+## War Room UI Behaviour
 
-```python
-# Page config always first in main.py
-st.set_page_config(
-    page_title="FF Draft Room",
-    page_icon="🏈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+- **4 columns**: QB | RB | WR | TE — all visible simultaneously
+- **Tier groups**: players grouped with labeled dividers, alternating backgrounds
+- **▲▼**: free reorder; crossing tier boundary auto-reassigns player's tier
+- **Click player name**: notes dialog (pre-filled, Save/Close)
+- **[+ Position · Tier N]**: add player dialog (name + team, placed at tier end)
+- **[×]**: delete confirm dialog before removal
+- **Save button**: manual save → POST /api/rankings/save
+- **Unsaved indicator**: shown after any change, cleared on save
+- **Player depth**: QB 30 / RB 50 / WR 50 / TE 30
 
-# Use columns for layout, not nested expanders
-col1, col2, col3 = st.columns([2, 1, 1])
+## Design System
 
-# Cache data loading — never reload CSVs on every rerun
-@st.cache_data
-def load_all_players() -> pd.DataFrame:
-    ...
+- **Background**: `#0D1B2A` (dark navy)
+- **Primary accent**: `#0076B6` (Honolulu Blue — Detroit Lions)
+- **Font**: monospace everywhere
+- **Player name boxes**: `#1A3A5C` background, `#E8E8E8` text, hover `#0076B6`
+- **Tier headers**: alternating `#132338` / `#1A4A6B`
+- **Column dividers**: `1px solid #1E3A5F` with `gap="large"` equivalent spacing
 
-# Sidebar for navigation and filters
-with st.sidebar:
-    page = st.radio("Navigation", ["War Room", "History", "Analysis"])
-```
+## Key Project Files
 
-### Data Handling
+Always check before starting work:
+- `docs/PLANNING.md` — Architecture, API design, structure
+- `docs/TASK.md` — Current sprint and status
+- `docs/DECISIONS.md` — ADRs — never contradict without a new ADR
 
-```python
-# All player data normalized to this schema after loading:
-# columns: rank, name, team, position, year, gp, ppg, total_pts
-# tier and notes added by user in War Room
+## Workflow: Claude.ai ↔ Claude Code
 
-# Positions: "QB", "RB", "WR", "TE"
-# Years: 2020, 2021, 2022, 2023, 2024, 2025
+| Claude.ai | Claude Code |
+|-----------|-------------|
+| Architecture decisions | Write code |
+| Create `initials/NN-init-*.md` | Run `/generate-prp` |
+| Review PRPs | Run `/execute-prp` |
+| Update docs | Git, tests, lint |
 
-# Rankings profiles saved as JSON:
-# { "name": str, "created": ISO, "modified": ISO, "players": [...] }
-```
+## Quick Reference
 
-## Error Handling Patterns
-
-```python
-# Data loading — graceful degradation
-try:
-    df = pd.read_csv(path)
-except FileNotFoundError:
-    st.warning(f"Data file not found: {path}")
-    return pd.DataFrame()
-
-# Rankings save/load
-try:
-    with open(profile_path, "r") as f:
-        profile = json.load(f)
-except (json.JSONDecodeError, KeyError) as e:
-    st.error(f"Could not load ranking profile: {e}")
-    return None
-```
-
-## Streamlit Dark Theme
-
-The app uses a custom dark theme defined in `.streamlit/config.toml`:
-```toml
-[theme]
-base = "dark"
-primaryColor = "#00c8ff"
-backgroundColor = "#050a12"
-secondaryBackgroundColor = "#0a1520"
-textColor = "#c8d8e8"
-font = "monospace"
-```
-
-## PRP Workflow
-
-### Generating PRPs
 ```bash
-/generate-prp initials/init-{feature}.md
+# Activate venv
+source .venv/bin/activate
+
+# Run backend
+uvicorn backend.main:app --reload
+
+# Run frontend
+cd frontend && npm run dev
+
+# Tests
+pytest tests/ --cov=backend
+
+# Lint
+ruff check backend/ tests/
+
+# Commit format
+feat: / fix: / refactor: / docs: / test: / chore:
 ```
 
-### Executing PRPs
-```bash
-/execute-prp prps/prp-{feature}.md
-```
+## Known Issues
 
-## Debugging Checklist
-
-When something isn't working:
-
-1. **Streamlit errors**: Check terminal output where `streamlit run` is running
-2. **Data issues**: Use `st.dataframe(df.head())` to inspect mid-page
-3. **Session state**: Use `st.write(st.session_state)` to debug state
-4. **Cache issues**: Press `C` in browser or use `st.cache_data.clear()`
-5. **Recent changes**: `git log --oneline -10`
-
-## DO NOT
-
-- Commit CSV data files with sensitive info
-- Use `st.experimental_*` deprecated APIs
-- Create files over 500 lines
-- Contradict existing ADRs without discussion
-- Use `time.sleep()` or blocking calls in Streamlit callbacks
-- Hardcode file paths — use `pathlib.Path` relative to project root
-
-## Reference Documents
-
-- `docs/PLANNING.md` — Architecture and data models
-- `docs/DECISIONS.md` — Past decisions to respect
-- `docs/TASK.md` — Current work status
-- `docs/TESTING.md` — Testing standards
+- Python 3.9 on system — `Path | None` union syntax unsupported.
+  Fixed with `from __future__ import annotations` at top of every backend file.

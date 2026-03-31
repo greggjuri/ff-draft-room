@@ -2,107 +2,129 @@
 
 ## Project Vision
 
-A personal fantasy football draft tool that replaces scattered spreadsheets and third-party apps.  
-Two modes: **War Room** for pre-draft preparation and **Live Draft** for real-time tracking.  
-Runs locally on MacBook Air M1 via Streamlit. No cloud, no subscriptions, no ads.
+A personal fantasy football draft tool for building and managing pre-draft rankings.
+One mode: **War Room** — a live rankings board where you reorder players, assign tiers,
+add notes, and build your cheat sheet for the upcoming season.
+Runs locally on MacBook Air M1. No cloud, no subscriptions, no ads.
+
+Historical FantasyPros data (2020–2025) seeds the initial rankings baseline.
+It is infrastructure, not UI.
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    STREAMLIT UI (localhost:8501)                      │
-│                                                                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐  │
-│  │  War Room   │  │  History    │  │  Analysis   │  │Live Draft │  │
-│  │  (Phase 1)  │  │  (Phase 1)  │  │  (Phase 1)  │  │(Phase 2)  │  │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └───────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         APP LAYER                                     │
-│  app/utils/data_loader.py   — CSV parsing, normalization             │
-│  app/utils/rankings.py      — Save/load/manage ranking profiles      │
-│  app/utils/vor.py           — VOR calculation engine                 │
-│  app/utils/constants.py     — Positions, tiers, scoring settings     │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┴───────────────┐
-              ▼                               ▼
-┌─────────────────────────┐     ┌─────────────────────────┐
-│   data/players/*.csv    │     │  data/rankings/*.json   │
-│   (read-only source)    │     │  (user-editable state)  │
-└─────────────────────────┘     └─────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│              REACT FRONTEND (localhost:5173)             │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │                   War Room                       │   │
+│  │   QB | RB | WR | TE  (side-by-side columns)     │   │
+│  │   Tier groups · ▲▼ reorder · notes dialog       │   │
+│  │   Add player · Delete player · Save              │   │
+│  └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+                          │ REST API
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│              FASTAPI BACKEND (localhost:8000)            │
+│                                                         │
+│  backend/main.py              — FastAPI app + CORS      │
+│  backend/routers/rankings.py  — API routes              │
+│  backend/utils/               — Python logic layer      │
+│    data_loader.py             — CSV parsing ✅ tested   │
+│    rankings.py                — Profile CRUD ✅ tested  │
+│    constants.py               — Config ✅ tested        │
+└─────────────────────────────────────────────────────────┘
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+┌─────────────────────┐     ┌─────────────────────────┐
+│  data/players/*.csv │     │  data/rankings/*.json   │
+│  (seed source only) │     │  (user rankings state)  │
+└─────────────────────┘     └─────────────────────────┘
 ```
 
 ## Tech Stack
 
-- **UI Framework**: Streamlit 1.35+
-- **Language**: Python 3.11+
-- **Data Processing**: Pandas 2.x
-- **Charts**: Plotly Express
-- **Persistence**: JSON (local filesystem)
+### Backend
+- **Framework**: FastAPI
+- **Language**: Python 3.9+ (`from __future__ import annotations` for union types)
+- **Data**: Pandas 2.x — CSV processing
+- **Persistence**: JSON files (`data/rankings/`)
 - **Testing**: pytest + pytest-cov
 - **Linting**: ruff
-- **Platform**: macOS M1 (local only)
+
+### Frontend
+- **Framework**: React 18
+- **Build tool**: Vite
+- **Language**: JavaScript (JSX)
+- **Styling**: Plain CSS — full control, no framework
+- **HTTP**: fetch API
+- **Dev server**: localhost:5173 proxies /api/* to localhost:8000
+
+### Platform
+- macOS M1, runs fully locally
+- Backend: `uvicorn backend.main:app --reload` → localhost:8000
+- Frontend: `npm run dev` → localhost:5173
+
+## API Design
+
+### Rankings endpoints
+```
+GET    /api/rankings                          → load current profile
+POST   /api/rankings/save                     → save current profile
+POST   /api/rankings/seed                     → re-seed from CSV (reset)
+
+GET    /api/rankings/{position}               → players for one position
+POST   /api/rankings/{position}/reorder       → swap two players (▲▼)
+POST   /api/rankings/{position}/add           → add a new player
+DELETE /api/rankings/{position}/{rank}        → delete a player
+PUT    /api/rankings/{position}/{rank}/notes  → update player notes
+```
+
+### Request/Response shapes
+```json
+// POST /api/rankings/{position}/reorder
+{ "rank_a": 2, "rank_b": 3 }
+
+// POST /api/rankings/{position}/add
+{ "name": "Josh Allen", "team": "BUF", "tier": 1 }
+
+// PUT /api/rankings/{position}/{rank}/notes
+{ "notes": "Elite rushing upside" }
+
+// All mutation responses return updated position player list
+[{ "position_rank": 1, "name": "...", "team": "...", "tier": 1, "notes": "" }]
+```
 
 ## Data Model
 
-### Source Data (CSV — read only)
-```
-Columns from FantasyPros half-PPR export:
-  #         → rank (int)
-  Player    → name (str)
-  Team      → team (str)
-  Pos       → position (str)  [QB, RB, WR, TE]
-  GP        → gp (int)
-  AVG       → ppg (float)
-  TTL       → total_pts (float)
-  year      → year (int)      [added during load]
-```
-
-### Normalized DataFrame (in-memory)
-```python
-# All positions combined, all years
-# dtypes enforced on load
-df.columns = ["rank", "name", "team", "position", "year", "gp", "ppg", "total_pts"]
-```
-
-### Rankings Profile (JSON — user data)
+### Player (JSON)
 ```json
 {
-  "name": "2026 Draft - My Rankings",
-  "created": "2026-03-22T00:00:00",
-  "modified": "2026-03-22T00:00:00",
-  "league": {
-    "teams": 10,
-    "scoring": "half_ppr",
-    "roster": ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DST", "BN", "BN", "BN", "BN", "BN", "BN"]
-  },
-  "players": [
-    {
-      "rank": 1,
-      "name": "Christian McCaffrey",
-      "team": "SF",
-      "position": "RB",
-      "tier": 1,
-      "notes": "",
-      "locked": false
-    }
-  ]
+  "position_rank": 1,
+  "name": "Josh Allen",
+  "team": "BUF",
+  "position": "QB",
+  "tier": 1,
+  "notes": ""
 }
 ```
 
-### VOR Model
-```
-replacement_levels = {
-  "QB":  QB rank 13  (last starter in 10-team 1-QB league)
-  "RB":  RB rank 25  (RB2 + flex consideration)
-  "WR":  WR rank 35  (WR2 + flex consideration)
-  "TE":  TE rank 13  (last starter)
+### Rankings Profile (data/rankings/default.json)
+```json
+{
+  "name": "2026 Draft",
+  "created": "2026-03-30T00:00:00",
+  "modified": "2026-03-30T00:00:00",
+  "league": { "teams": 10, "scoring": "half_ppr" },
+  "players": [ ... ]
 }
+```
 
-VOR = player_projected_pts - replacement_level_pts
+### Seeding Limits
+```
+QB: top 30 · RB: top 50 · WR: top 50 · TE: top 30
 ```
 
 ## Project Structure
@@ -111,103 +133,82 @@ VOR = player_projected_pts - replacement_level_pts
 ff-draft-room/
 ├── CLAUDE.md
 ├── README.md
-├── requirements.txt
 ├── .gitignore
-├── .streamlit/
-│   └── config.toml              # Dark theme config
+├── assets/
+│   └── ff-logo.jpg
 ├── docs/
-│   ├── PLANNING.md              # This file
+│   ├── PLANNING.md
 │   ├── TASK.md
-│   ├── DECISIONS.md
-│   └── TESTING.md
-├── initials/                    # init-*.md feature specs
-├── prps/                        # prp-*.md implementation plans
-│   └── templates/
-│       └── prp-template.md
-├── .claude/
-│   └── commands/
-│       ├── generate-prp.md
-│       └── execute-prp.md
+│   └── DECISIONS.md
+├── initials/
+├── prps/
 ├── data/
-│   ├── players/                 # FantasyPros CSV exports (source of truth)
-│   └── rankings/                # User-saved ranking profiles (JSON)
-├── app/
-│   ├── main.py                  # Entry point, page config, sidebar nav
-│   ├── pages/
-│   │   ├── war_room.py          # Rankings editor + tier builder
-│   │   ├── history.py           # Historical stats browser
-│   │   ├── analysis.py          # VOR + positional depth charts
-│   │   └── live_draft.py        # Live draft tracker (Phase 2)
-│   ├── components/
-│   │   ├── player_table.py      # Reusable interactive player table
-│   │   ├── tier_editor.py       # Tier assignment interface
-│   │   └── vor_chart.py         # VOR waterfall/bar visualization
-│   └── utils/
-│       ├── data_loader.py       # CSV → normalized DataFrame
-│       ├── rankings.py          # Profile CRUD operations
-│       ├── vor.py               # VOR engine
-│       └── constants.py         # Config: positions, tiers, scoring
+│   ├── players/             # FantasyPros CSVs (read-only)
+│   └── rankings/            # JSON profiles (user data)
+├── backend/
+│   ├── main.py              # FastAPI app, CORS
+│   ├── routers/
+│   │   └── rankings.py      # /api/rankings/* routes
+│   └── utils/               # Ported from app/utils/
+│       ├── __init__.py
+│       ├── data_loader.py   ✅
+│       ├── rankings.py      ✅
+│       └── constants.py     ✅
+├── frontend/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── main.jsx
+│       ├── App.jsx
+│       ├── App.css
+│       ├── api/
+│       │   └── rankings.js       # All fetch() calls
+│       └── components/
+│           ├── WarRoom.jsx
+│           ├── PositionColumn.jsx
+│           ├── TierGroup.jsx
+│           ├── PlayerRow.jsx
+│           ├── NotesDialog.jsx
+│           ├── AddPlayerDialog.jsx
+│           └── DeleteConfirmDialog.jsx
 └── tests/
-    ├── test_data_loader.py
-    ├── test_rankings.py
-    └── test_vor.py
+    ├── test_data_loader.py  ✅ 8 passing
+    ├── test_rankings.py     ✅ 27 passing
+    └── test_vor.py          # Future
 ```
 
 ## Development Phases
 
-### Phase 1: War Room (current)
+### Phase 1: War Room
 
-#### 1a — Foundation
-- [ ] `init-project-setup.md` — Project scaffold, dependencies, Streamlit config, CSV loading
-- [ ] `init-history-browser.md` — Historical stats page: all positions/years, sortable table, filters
+#### 1a — Foundation ✅ Complete
+- [x] CSV loading + normalization (`data_loader.py`)
+- [x] Rankings CRUD + seed logic (`rankings.py`)
+- [x] 43 tests passing, 84% coverage on utils
 
-#### 1b — Core War Room
-- [ ] `init-war-room-rankings.md` — Rankings editor: reorder players, assign tiers, save profiles
-- [ ] `init-vor-calculator.md` — VOR engine + analysis page with positional depth charts
+#### 1b — Stack Migration (current focus)
+- [ ] `04-init-fastapi-react-migration.md`
+  - Retire Streamlit entirely
+  - FastAPI backend wrapping existing utils
+  - Vite + React frontend — full War Room UI
+  - All features from Streamlit version, done properly
 
-#### 1c — Polish
-- [ ] `init-rankings-profiles.md` — Multiple saved profiles, load/copy/delete, export to CSV
+#### 1c — Polish (future)
+- [ ] K and D/ST columns
+- [ ] Multiple named profiles
+- [ ] Export rankings to CSV
 
-### Phase 2: Live Draft
-- [ ] `init-live-draft-tracker.md` — Snake draft board, mark picks, best available
-- [ ] `init-draft-roster-view.md` — My team view, positional needs, scarcity alerts
-
-### Future
-- Import ADP data from external source
-- Mock draft simulator
-- Trade evaluator
+### Phase 2: Live Draft (future)
+- [ ] Snake draft board, mark picks
+- [ ] Best available board
+- [ ] My roster view, scarcity alerts
 
 ## Key Constraints
 
-1. **Local only** — no cloud, no API keys, no network calls
-2. **FantasyPros CSV format** — data loader must handle their export format exactly
-3. **500-line file limit** — split into modules when approaching
-4. **No external drag-and-drop libs** — use Streamlit-native reordering patterns
-5. **macOS M1 compatible** — test all dependencies for arm64
-
-## Success Criteria
-
-1. [ ] App starts with `streamlit run app/main.py` — no errors
-2. [ ] All 780 player records load correctly from CSVs
-3. [ ] User can browse history by position/year and sort by any column
-4. [ ] User can build and save a custom ranking profile
-5. [ ] VOR scores calculated and visualized for all positions
-6. [ ] Rankings profiles persist between sessions (JSON)
-7. [ ] App feels fast — data loads cached, no lag on filter changes
-
-## Non-Functional Requirements
-
-### Performance
-- Initial data load: < 2 seconds
-- Page navigation: < 500ms
-- Filter/sort operations: < 200ms (cached DataFrames)
-
-### Reliability
-- Graceful handling of missing CSV files
-- Profile save failure shows error, doesn't crash
-- All user state in `st.session_state` survives page navigation
-
-### Usability
-- Dark tactical theme throughout
-- Mobile not required — desktop only
-- Keyboard shortcuts where Streamlit allows
+1. **Local only** — no cloud, no auth, no external API calls at runtime
+2. **File size limit: 500 lines max** — split into modules when approaching
+3. **Commit after every feature** — atomic, working commits
+4. **Data source**: FantasyPros half-PPR CSV exports only
+5. **Python imports**: relative to `backend/` — `from utils.constants import ...`
+6. **macOS M1**: Python 3.9+, `from __future__ import annotations`
