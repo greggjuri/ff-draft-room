@@ -40,7 +40,7 @@ html, body, [class*="css"] { font-size: 11px !important; }
     margin-right: 0 !important;
 }
 
-/* Target ALL buttons except player name buttons */
+/* Target ALL buttons — center text via inner DOM structure */
 .stButton > button {
     display: flex !important;
     align-items: center !important;
@@ -50,6 +50,13 @@ html, body, [class*="css"] { font-size: 11px !important; }
     line-height: 1 !important;
     font-size: 11px !important;
     height: 24px !important;
+}
+.stButton > button > div > p {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    width: 100% !important;
 }
 
 /* Player name — visible box, fixed height, left-aligned text */
@@ -77,6 +84,17 @@ html, body, [class*="css"] { font-size: 11px !important; }
 
 /* Tier divider text — muted, no extra space */
 hr { margin: 4px 0 !important; border-color: #1E3A5F !important; }
+
+/* Alternate tier group backgrounds using sibling containers */
+[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"]:nth-child(odd) {
+    background-color: #132338 !important;
+    border-radius: 6px !important;
+    padding: 4px !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"]:nth-child(even) {
+    background-color: #0D1B2A !important;
+    border-radius: 6px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 

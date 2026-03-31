@@ -139,98 +139,91 @@ def _render_position_column(position: str) -> None:
     for tier in sorted(tier_groups.keys()):
         tier_players = tier_groups[tier]
 
-        # Alternating tier background
-        tier_bg = "#0D2137" if tier % 2 == 0 else "#0D1B2A"
-        st.markdown(
-            f'<div style="background:{tier_bg}; border-radius:6px; '
-            f'padding:4px; margin-bottom:4px;">',
-            unsafe_allow_html=True,
-        )
-
-        # Tier divider
-        st.markdown(
-            f"<div style='color:#555; font-size:0.8em; border-bottom:1px solid #333; "
-            f"margin:8px 0 4px 0; padding-bottom:2px;'>\u2500\u2500 TIER {tier} "
-            f"\u2500\u2500</div>",
-            unsafe_allow_html=True,
-        )
-
-        # Player rows
-        for p in tier_players:
-            rank = p["position_rank"]
-            name_label = p["name"]
-            if p["notes"]:
-                name_label += " \U0001f4dd"
-
-            c_up, c_dn, c_rank, c_name, c_team = st.columns(
-                [1, 1, 1, 6, 2]
+        with st.container(border=False):
+            # Tier divider
+            st.markdown(
+                f"<div style='color:#555; font-size:0.8em; border-bottom:1px solid #333; "
+                f"margin:8px 0 4px 0; padding-bottom:2px;'>\u2500\u2500 TIER {tier} "
+                f"\u2500\u2500</div>",
+                unsafe_allow_html=True,
             )
 
-            with c_up:
-                if st.button(
-                    "\u25b2",
-                    key=f"up_{position}_{rank}",
-                    disabled=(rank == 1),
-                    use_container_width=True,
-                ):
-                    st.session_state.rankings = swap_players(
-                        st.session_state.rankings, position, rank - 1, rank
-                    )
-                    st.session_state.dirty = True
-                    st.rerun()
+            # Player rows
+            for p in tier_players:
+                rank = p["position_rank"]
+                name_label = p["name"]
+                if p["notes"]:
+                    name_label += " \U0001f4dd"
 
-            with c_dn:
-                if st.button(
-                    "\u25bc",
-                    key=f"dn_{position}_{rank}",
-                    disabled=(rank == last_rank),
-                    use_container_width=True,
-                ):
-                    st.session_state.rankings = swap_players(
-                        st.session_state.rankings, position, rank, rank + 1
-                    )
-                    st.session_state.dirty = True
-                    st.rerun()
-
-            with c_rank:
-                st.markdown(
-                    f"<span style='color:#666; font-size:0.85em;'>{rank}</span>",
-                    unsafe_allow_html=True,
+                c_up, c_dn, c_rank, c_name, c_team = st.columns(
+                    [1, 1, 1, 6, 2]
                 )
 
-            with c_name:
-                if st.button(
-                    name_label,
-                    key=f"name_{position}_{rank}",
-                    use_container_width=True,
-                ):
-                    notes_dialog(p["name"], p["team"], position, rank)
-
-            with c_team:
-                tc1, tc2 = st.columns([3, 1])
-                with tc1:
-                    st.markdown(
-                        f"<span style='color:#666; font-size:0.85em;'>{p['team']}</span>",
-                        unsafe_allow_html=True,
-                    )
-                with tc2:
+                with c_up:
                     if st.button(
-                        "\u2715",
-                        key=f"del_{position}_{rank}",
+                        "\u25b2",
+                        key=f"up_{position}_{rank}",
+                        disabled=(rank == 1),
                         use_container_width=True,
                     ):
-                        delete_confirm_dialog(p["name"], p["team"], position, rank)
+                        st.session_state.rankings = swap_players(
+                            st.session_state.rankings, position, rank - 1, rank
+                        )
+                        st.session_state.dirty = True
+                        st.rerun()
 
-        # Add-to-tier button at bottom of each tier group
-        if st.button(
-            f"+ {position} \u00b7 Tier {tier}",
-            key=f"add_{position}_t{tier}",
-            use_container_width=True,
-        ):
-            add_player_dialog(position, tier)
+                with c_dn:
+                    if st.button(
+                        "\u25bc",
+                        key=f"dn_{position}_{rank}",
+                        disabled=(rank == last_rank),
+                        use_container_width=True,
+                    ):
+                        st.session_state.rankings = swap_players(
+                            st.session_state.rankings, position, rank, rank + 1
+                        )
+                        st.session_state.dirty = True
+                        st.rerun()
 
-        # Close alternating tier background div
-        st.markdown("</div>", unsafe_allow_html=True)
+                with c_rank:
+                    st.markdown(
+                        f"<span style='color:#666; font-size:0.85em;'>{rank}</span>",
+                        unsafe_allow_html=True,
+                    )
+
+                with c_name:
+                    if st.button(
+                        name_label,
+                        key=f"name_{position}_{rank}",
+                        use_container_width=True,
+                    ):
+                        notes_dialog(p["name"], p["team"], position, rank)
+
+                with c_team:
+                    tc1, tc2 = st.columns([3, 1])
+                    with tc1:
+                        st.markdown(
+                            f"<span style='color:#666; font-size:0.85em;'>"
+                            f"{p['team']}</span>",
+                            unsafe_allow_html=True,
+                        )
+                    with tc2:
+                        if st.button(
+                            "\u2715",
+                            key=f"del_{position}_{rank}",
+                            use_container_width=True,
+                        ):
+                            delete_confirm_dialog(
+                                p["name"], p["team"], position, rank
+                            )
+
+            # Add-to-tier button at bottom of each tier group
+            if st.button(
+                f"+ {position} \u00b7 Tier {tier}",
+                key=f"add_{position}_t{tier}",
+                use_container_width=True,
+            ):
+                add_player_dialog(position, tier)
 
 
 # ---------------------------------------------------------------------------
