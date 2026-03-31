@@ -255,7 +255,7 @@ def render() -> None:
                 st.error("Save failed \u2014 check file permissions.")
 
     # Four position columns
-    columns = st.columns([1, 1, 1, 1])
+    columns = st.columns([1, 1, 1, 1], gap="large")
     for col, position in zip(columns, POSITIONS):
         with col:
             _render_position_column(position)
