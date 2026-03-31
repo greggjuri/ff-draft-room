@@ -140,18 +140,9 @@ def _render_position_column(position: str) -> None:
         tier_players = tier_groups[tier]
 
         with st.container(border=True):
-            # Hidden marker for JS-based tier background coloring
-            tier_bg = "#132338" if tier % 2 == 0 else "#0A1628"
-            st.markdown(
-                f'<span class="tier-marker" data-bg="{tier_bg}" '
-                f'style="display:none"></span>',
-                unsafe_allow_html=True,
-            )
-
             # Tier header
-            tier_header_bg = "#132338" if tier % 2 == 0 else "#1A4A6B"
             st.markdown(
-                f'<div style="background:{tier_header_bg}; border-radius:4px; '
+                f'<div style="border-radius:4px; '
                 f'padding:3px 8px; margin-bottom:4px; '
                 f'font-size:10px; letter-spacing:2px; color:#7AAFD4;">'
                 f"\u2014 TIER {tier} \u2014</div>",
