@@ -88,6 +88,32 @@ hr { margin: 4px 0 !important; border-color: #1E3A5F !important; }
 </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<script>
+const applyTierColors = () => {
+    document.querySelectorAll('.tier-marker').forEach(marker => {
+        const bg = marker.getAttribute('data-bg');
+        let node = marker;
+        // Walk up DOM to find the stVerticalBlock container
+        while (node && node.getAttribute &&
+               node.getAttribute('data-testid') !== 'stVerticalBlock') {
+            node = node.parentElement;
+        }
+        if (node) {
+            node.style.backgroundColor = bg;
+            node.style.borderRadius = '6px';
+            node.style.padding = '4px';
+            node.style.marginBottom = '6px';
+        }
+    });
+};
+// Run on load and on every Streamlit re-render
+const observer = new MutationObserver(applyTierColors);
+observer.observe(document.body, { childList: true, subtree: true });
+applyTierColors();
+</script>
+""", unsafe_allow_html=True)
+
 # -- Data loading & session state ---------------------------------------------
 
 df = load_all_players()
