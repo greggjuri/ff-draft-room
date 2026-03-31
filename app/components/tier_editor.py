@@ -1,1 +1,0 @@
-"""Tier assignment UI component."""
