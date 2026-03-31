@@ -4,24 +4,20 @@ from __future__ import annotations
 
 import copy
 import json
-from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
-with patch("streamlit.warning"), patch("streamlit.error"), patch(
-    "streamlit.cache_data", lambda f: f
-):
-    from utils.rankings import (
-        SEED_LIMITS,
-        add_player,
-        delete_player,
-        get_position_players,
-        load_or_seed,
-        save_rankings,
-        seed_rankings,
-        swap_players,
-    )
+from utils.rankings import (
+    SEED_LIMITS,
+    add_player,
+    delete_player,
+    get_position_players,
+    load_or_seed,
+    save_rankings,
+    seed_rankings,
+    swap_players,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -82,24 +78,21 @@ def sample_profile() -> dict:
 # ---------------------------------------------------------------------------
 
 
-@patch("streamlit.error")
-def test_seed_all_positions(mock_err, sample_df):
+def test_seed_all_positions(sample_df):
     profile = seed_rankings(sample_df)
     for pos, expected in SEED_LIMITS.items():
         count = len([p for p in profile["players"] if p["position"] == pos])
         assert count == expected, f"{pos}: expected {expected}, got {count}"
 
 
-@patch("streamlit.error")
-def test_seed_respects_depth_limits(mock_err, sample_df):
+def test_seed_respects_depth_limits(sample_df):
     profile = seed_rankings(sample_df)
     for pos, limit in SEED_LIMITS.items():
         count = len([p for p in profile["players"] if p["position"] == pos])
         assert count <= limit
 
 
-@patch("streamlit.error")
-def test_seed_sorted_by_total_pts(mock_err, sample_df):
+def test_seed_sorted_by_total_pts(sample_df):
     profile = seed_rankings(sample_df)
     for pos in SEED_LIMITS:
         players = [p for p in profile["players"] if p["position"] == pos]
@@ -107,8 +100,7 @@ def test_seed_sorted_by_total_pts(mock_err, sample_df):
         assert players[0]["position_rank"] == 1
 
 
-@patch("streamlit.error")
-def test_seed_position_rank_sequential(mock_err, sample_df):
+def test_seed_position_rank_sequential(sample_df):
     profile = seed_rankings(sample_df)
     for pos in SEED_LIMITS:
         players = sorted(
@@ -119,16 +111,14 @@ def test_seed_position_rank_sequential(mock_err, sample_df):
         assert ranks == list(range(1, len(players) + 1))
 
 
-@patch("streamlit.error")
-def test_seed_has_tier(mock_err, sample_df):
+def test_seed_has_tier(sample_df):
     profile = seed_rankings(sample_df)
     for p in profile["players"]:
         assert isinstance(p["tier"], int)
         assert p["tier"] >= 1
 
 
-@patch("streamlit.error")
-def test_seed_tier_nondecreasing(mock_err, sample_df):
+def test_seed_tier_nondecreasing(sample_df):
     profile = seed_rankings(sample_df)
     for pos in SEED_LIMITS:
         players = sorted(
@@ -142,8 +132,7 @@ def test_seed_tier_nondecreasing(mock_err, sample_df):
             )
 
 
-@patch("streamlit.error")
-def test_seed_uses_2025_only(mock_err):
+def test_seed_uses_2025_only():
     """Seed ignores non-2025 data."""
     rows_2024 = _make_players("QB", 5, year=2024)
     rows_2025 = _make_players("QB", 5, year=2025)
@@ -153,8 +142,7 @@ def test_seed_uses_2025_only(mock_err):
     assert len(qbs) == 5  # only 2025 rows
 
 
-@patch("streamlit.error")
-def test_seed_notes_empty(mock_err, sample_df):
+def test_seed_notes_empty(sample_df):
     profile = seed_rankings(sample_df)
     for p in profile["players"]:
         assert p["notes"] == ""
@@ -165,9 +153,7 @@ def test_seed_notes_empty(mock_err, sample_df):
 # ---------------------------------------------------------------------------
 
 
-@patch("streamlit.warning")
-@patch("streamlit.error")
-def test_load_or_seed_creates_file(mock_err, mock_warn, sample_df, tmp_path):
+def test_load_or_seed_creates_file(sample_df, tmp_path):
     json_path = tmp_path / "default.json"
     assert not json_path.exists()
     profile = load_or_seed(sample_df, rankings_dir=tmp_path)
@@ -175,9 +161,7 @@ def test_load_or_seed_creates_file(mock_err, mock_warn, sample_df, tmp_path):
     assert len(profile["players"]) > 0
 
 
-@patch("streamlit.warning")
-@patch("streamlit.error")
-def test_load_or_seed_loads_existing(mock_err, mock_warn, tmp_path):
+def test_load_or_seed_loads_existing(tmp_path):
     existing = {
         "name": "Existing",
         "players": [{"position_rank": 1, "name": "X", "team": "Y", "position": "QB", "tier": 1, "notes": ""}],
