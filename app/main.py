@@ -85,16 +85,6 @@ html, body, [class*="css"] { font-size: 11px !important; }
 /* Tier divider text — muted, no extra space */
 hr { margin: 4px 0 !important; border-color: #1E3A5F !important; }
 
-/* Alternate tier group backgrounds using sibling containers */
-[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"]:nth-child(odd) {
-    background-color: #132338 !important;
-    border-radius: 6px !important;
-    padding: 4px !important;
-}
-[data-testid="stVerticalBlockBorderWrapper"]:nth-child(even) {
-    background-color: #0D1B2A !important;
-    border-radius: 6px !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
