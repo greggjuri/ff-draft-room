@@ -31,8 +31,8 @@ html, body, [class*="css"] { font-size: 11px !important; }
 /* Vertical divider between columns */
 [data-testid="column"] {
     border-right: 1px solid #1E3A5F;
-    padding-right: 12px !important;
-    padding-left: 12px !important;
+    padding-right: 20px !important;
+    padding-left: 20px !important;
 }
 [data-testid="column"]:last-child { border-right: none; }
 
@@ -47,17 +47,22 @@ html, body, [class*="css"] { font-size: 11px !important; }
 
 /* Player name — visible box, fixed height, left-aligned text */
 .stButton > button[kind="secondary"] {
-    background: #132338 !important;
-    border: 1px solid #1E3A5F !important;
+    background: #C8D8E8 !important;
+    border: 1px solid #A0B8CC !important;
     border-radius: 4px !important;
     text-align: left !important;
     padding: 2px 8px !important;
-    color: #E8E8E8 !important;
+    color: #0D1B2A !important;
     width: 100% !important;
     height: 28px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    background: #0076B6 !important;
+    color: #FFFFFF !important;
+    border-color: #0076B6 !important;
 }
 
 /* Kill gap between rows */
