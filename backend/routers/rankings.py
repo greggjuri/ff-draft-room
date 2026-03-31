@@ -17,7 +17,7 @@ from utils.rankings import (
     swap_players,
 )
 
-router = APIRouter(prefix="/rankings")
+router = APIRouter(prefix="/rankings", redirect_slashes=False)
 
 # ---------------------------------------------------------------------------
 # Module-level state — single-user local app
@@ -72,6 +72,7 @@ class NotesRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+@router.get("")
 @router.get("/")
 def get_rankings() -> dict:
     """Return full rankings profile."""

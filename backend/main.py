@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import sys
+from pathlib import Path
 
-from routers import rankings
+# Ensure backend/ is on sys.path so internal imports resolve
+sys.path.insert(0, str(Path(__file__).parent))
+
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+
+from routers import rankings  # noqa: E402
 
 app = FastAPI(title="FF Draft Room API")
 
