@@ -15,6 +15,59 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+st.markdown("""
+<style>
+/* Lighter background — dark navy instead of near-black */
+.stApp { background-color: #0D1B2A !important; }
+
+/* Hide sidebar completely */
+[data-testid="stSidebar"],
+[data-testid="collapsedControl"],
+section[data-testid="stSidebar"] { display: none !important; }
+
+/* Smaller, tighter base font */
+html, body, [class*="css"] { font-size: 11px !important; }
+
+/* Vertical divider between columns */
+[data-testid="column"] {
+    border-right: 1px solid #1E3A5F;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+}
+[data-testid="column"]:last-child { border-right: none; }
+
+/* Compact buttons — kill padding, tighten height */
+.stButton > button {
+    padding: 1px 4px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    min-height: 0 !important;
+    height: 24px !important;
+}
+
+/* Player name — visible box, fixed height, left-aligned text */
+.stButton > button[kind="secondary"] {
+    background: #132338 !important;
+    border: 1px solid #1E3A5F !important;
+    border-radius: 4px !important;
+    text-align: left !important;
+    padding: 2px 8px !important;
+    color: #E8E8E8 !important;
+    width: 100% !important;
+    height: 28px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Kill gap between rows */
+[data-testid="stVerticalBlock"] > div { gap: 2px !important; }
+
+/* Tier divider text — muted, no extra space */
+hr { margin: 4px 0 !important; border-color: #1E3A5F !important; }
+</style>
+""", unsafe_allow_html=True)
+
 # -- Data loading & session state ---------------------------------------------
 
 df = load_all_players()

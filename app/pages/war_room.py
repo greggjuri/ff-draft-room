@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from itertools import groupby
+from collections import defaultdict
 
 import streamlit as st
 
@@ -131,9 +131,13 @@ def _render_position_column(position: str) -> None:
     st.caption(f"{len(players)} players")
     last_rank = players[-1]["position_rank"]
 
-    # Group players by tier
-    for tier, tier_players_iter in groupby(players, key=lambda p: p["tier"]):
-        tier_players = list(tier_players_iter)
+    # Group by tier — all players with same tier together
+    tier_groups: dict[int, list[dict]] = defaultdict(list)
+    for p in players:
+        tier_groups[p["tier"]].append(p)
+
+    for tier in sorted(tier_groups.keys()):
+        tier_players = tier_groups[tier]
 
         # Tier divider
         st.markdown(
@@ -150,8 +154,8 @@ def _render_position_column(position: str) -> None:
             if p["notes"]:
                 name_label += " \U0001f4dd"
 
-            c_up, c_dn, c_rank, c_name, c_team, c_del = st.columns(
-                [1, 1, 1, 5, 2, 1]
+            c_up, c_dn, c_rank, c_name, c_team = st.columns(
+                [1, 1, 1, 6, 2]
             )
 
             with c_up:
@@ -195,18 +199,19 @@ def _render_position_column(position: str) -> None:
                     notes_dialog(p["name"], p["team"], position, rank)
 
             with c_team:
-                st.markdown(
-                    f"<span style='color:#666; font-size:0.85em;'>{p['team']}</span>",
-                    unsafe_allow_html=True,
-                )
-
-            with c_del:
-                if st.button(
-                    "\u2715",
-                    key=f"del_{position}_{rank}",
-                    use_container_width=True,
-                ):
-                    delete_confirm_dialog(p["name"], p["team"], position, rank)
+                tc1, tc2 = st.columns([3, 1])
+                with tc1:
+                    st.markdown(
+                        f"<span style='color:#666; font-size:0.85em;'>{p['team']}</span>",
+                        unsafe_allow_html=True,
+                    )
+                with tc2:
+                    if st.button(
+                        "\u2715",
+                        key=f"del_{position}_{rank}",
+                        use_container_width=True,
+                    ):
+                        delete_confirm_dialog(p["name"], p["team"], position, rank)
 
         # Add-to-tier button at bottom of each tier group
         if st.button(
