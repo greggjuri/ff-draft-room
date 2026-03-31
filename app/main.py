@@ -40,12 +40,15 @@ html, body, [class*="css"] { font-size: 11px !important; }
     margin-right: 0 !important;
 }
 
-/* Compact buttons — kill padding, tighten height */
+/* Target ALL buttons except player name buttons */
 .stButton > button {
-    padding: 1px 4px !important;
-    font-size: 11px !important;
-    line-height: 1.1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
     min-height: 0 !important;
+    line-height: 1 !important;
+    font-size: 11px !important;
     height: 24px !important;
 }
 
@@ -67,19 +70,6 @@ html, body, [class*="css"] { font-size: 11px !important; }
     background: #0076B6 !important;
     border-color: #0076B6 !important;
     color: #FFFFFF !important;
-}
-
-/* Center all small control buttons (▲ ▼ ×) vertically and horizontally */
-.stButton > button[kind="primary"],
-.stButton > button:not([kind="secondary"]) {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    width: 24px !important;
-    height: 24px !important;
-    min-height: 0 !important;
-    line-height: 1 !important;
 }
 
 /* Kill gap between rows */

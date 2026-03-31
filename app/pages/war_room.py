@@ -139,6 +139,14 @@ def _render_position_column(position: str) -> None:
     for tier in sorted(tier_groups.keys()):
         tier_players = tier_groups[tier]
 
+        # Alternating tier background
+        tier_bg = "#0D2137" if tier % 2 == 0 else "#0D1B2A"
+        st.markdown(
+            f'<div style="background:{tier_bg}; border-radius:6px; '
+            f'padding:4px; margin-bottom:4px;">',
+            unsafe_allow_html=True,
+        )
+
         # Tier divider
         st.markdown(
             f"<div style='color:#555; font-size:0.8em; border-bottom:1px solid #333; "
@@ -220,6 +228,9 @@ def _render_position_column(position: str) -> None:
             use_container_width=True,
         ):
             add_player_dialog(position, tier)
+
+        # Close alternating tier background div
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
