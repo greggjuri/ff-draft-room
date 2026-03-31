@@ -4,8 +4,9 @@ from pathlib import Path
 
 import streamlit as st
 
-from pages import analysis, history, live_draft, war_room
+from pages import live_draft, war_room
 from utils.data_loader import load_all_players
+from utils.rankings import load_or_seed
 
 st.set_page_config(
     page_title="FF Draft Room",
@@ -13,6 +14,19 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# -- Data loading & session state ---------------------------------------------
+
+df = load_all_players()
+
+if "df" not in st.session_state:
+    st.session_state.df = df
+
+if "rankings" not in st.session_state:
+    st.session_state.rankings = load_or_seed(df)
+
+if "dirty" not in st.session_state:
+    st.session_state.dirty = False
 
 # -- Sidebar ------------------------------------------------------------------
 
@@ -26,16 +40,9 @@ with st.sidebar:
 
     page = st.radio(
         "Navigation",
-        ["War Room", "History", "Analysis", "Live Draft"],
+        ["War Room", "Live Draft"],
         label_visibility="collapsed",
     )
-
-# -- Data loading --------------------------------------------------------------
-
-df = load_all_players()
-
-if "df" not in st.session_state:
-    st.session_state.df = df
 
 # -- Sidebar footer ------------------------------------------------------------
 
@@ -50,8 +57,6 @@ with st.sidebar:
 
 PAGES = {
     "War Room": war_room,
-    "History": history,
-    "Analysis": analysis,
     "Live Draft": live_draft,
 }
 

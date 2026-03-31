@@ -1,62 +1,82 @@
 # FF Draft Room - Task Tracker
 
-## Current Sprint: Phase 1a — Foundation
+## Current Sprint: Phase 1b — War Room Core
 
 ### In Progress
-*(none)*
-
-### Up Next
-- [ ] `init-war-room-rankings.md` — Rankings editor
+_None_
 
 ---
 
 ## Backlog
 
-### Phase 1a — Foundation (start here)
-- [x] `init-project-setup.md` — requirements.txt, .streamlit/config.toml, data_loader.py, main.py skeleton
-- [x] `init-history-browser.md` — History page: position/year tabs, sortable table, search, filters
+### Phase 1b — War Room Core (current focus)
+- [ ] `03-init-war-room-core.md` — Full War Room page:
+  - Overall + QB + RB + WR + TE tabs
+  - Each row: overall rank · position rank · player · team · ▲▼ buttons
+  - Click player name → `st.dialog` popup with notes text area + Save/Close
+  - Manual Save button → writes to `data/rankings/default.json`
+  - First launch: auto-seed from 2025 total_pts via data_loader
 
-### Phase 1b — Core War Room
-- [ ] `init-war-room-rankings.md` — Rankings editor: load baseline from history, reorder, assign tiers, save profile
-- [ ] `init-vor-calculator.md` — VOR engine (utils/vor.py) + Analysis page with positional depth charts
+### Phase 1c — Polish (future)
+- [ ] `04-init-rankings-profiles.md` — Multiple saved profiles: create, load, copy, delete
+- [ ] Export current rankings to CSV
 
-### Phase 1c — Polish
-- [ ] `init-rankings-profiles.md` — Profile manager: multiple saves, load/copy/delete, export CSV
-
-### Phase 2 — Live Draft
-- [ ] `init-live-draft-tracker.md` — Snake draft board (10-team), mark picks mine/other, pick clock
-- [ ] `init-draft-roster-view.md` — My team view, needs tracker, scarcity alerts by tier
-
-### Future / Nice to Have
-- [ ] ADP data import (FantasyPros ADP CSV)
-- [ ] Mock draft simulator
-- [ ] Trade evaluator
-- [ ] Side-by-side player comparison
+### Phase 2 — Live Draft (future)
+- [ ] `05-init-live-draft-tracker.md` — Snake draft board (10-team), mark picks mine/other
+- [ ] `06-init-draft-roster-view.md` — My team view, needs tracker, scarcity alerts
 
 ---
 
 ## Recently Completed
 
-- [x] `init-history-browser.md` — History page with year/position filtering, search, sortable table (2026-03-22)
-- [x] `init-project-setup.md` — Scaffold, deps, dark theme, data_loader, main.py, page stubs, tests (2026-03-22)
+- [x] `03-init-war-room-core.md` — War Room rankings board
+  - 4-column layout (QB/RB/WR/TE) with tier grouping and visual dividers
+  - ▲▼ reordering with automatic tier reassignment on boundary crossings
+  - Notes dialog, add player dialog, delete confirm dialog
+  - Auto-seeding from 2025 CSV data, JSON persistence
+  - 27 unit tests, 84% coverage on `app/utils/rankings.py`
+  - Sidebar nav simplified to War Room + Live Draft (ADR-005)
+
+- [x] `01-init-project-setup.md` — Project scaffold, data loader, Streamlit skeleton
+  - Commit: `6a5f313`
+  - 8 tests passing, 81% coverage on `app/utils/`
+  - Known issue: Python 3.9 on system — fixed with `from __future__ import annotations`
 
 ---
 
-## Completed
+## Dropped / Descoped
 
-*(nothing yet)*
+- ~~`02-init-history-browser.md`~~ — **Dropped** (2026-03-30)
+  - Reason: Pivot to rankings-only app. Historical data is seed infrastructure only,
+    not a browsable UI feature. The data loader already handles loading; no history
+    page needed.
+  - PRP was generated (02-prp-history-browser.md) but never executed.
 
 ---
 
 ## Architecture Decisions
 
-### Data Source Decision
-All player data sourced exclusively from FantasyPros half-PPR CSV exports.
-No approximations, no hardcoded fallback data. If file missing → warn user, return empty DataFrame.
+### Import Convention (Critical)
+Streamlit sets `sys.path` to `app/` at runtime. All imports must be relative to `app/`:
+```python
+# CORRECT
+from utils.constants import POSITIONS
+from pages import war_room
 
-### Local Persistence
-Rankings profiles saved as JSON to `data/rankings/`. No database.
-Simple, portable, human-readable. User can back up or share profile files manually.
+# WRONG — causes ModuleNotFoundError at runtime
+from app.utils.constants import POSITIONS
+```
+This bit us on first launch. All new files must follow this pattern.
+
+### Data Source for Seeding
+Rankings seeded from 2025 `total_pts` (most recent full season).
+Data loader already handles this — `load_all_players()` returns full DataFrame.
+Seeding logic lives in `app/utils/rankings.py`.
+
+### Pivot: History Page Dropped
+Original plan included a History browser page for browsing stats by position/year.
+Dropped in favour of a tighter product: the app is purely a rankings tool.
+Historical data remains as seed source only.
 
 ---
 
@@ -72,11 +92,12 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ### League Settings (defaults)
 - 10 teams, half-PPR, standard roster
-- Scoring: QB/RB/WR/TE (no K or DST in data)
+- Positions tracked: QB, RB, WR, TE
 
 ### Known Issues
-- Python 3.9.6 (system) — requires `from __future__ import annotations` for `X | None` type unions
+- Python 3.9 on system — `Path | None` union syntax unsupported.
+  Fixed globally with `from __future__ import annotations` at top of affected files.
 
 ---
 
-*Last updated: 2026-03-22 (history browser complete)*
+*Last updated: 2026-03-30 (pivot to rankings-only app)*
