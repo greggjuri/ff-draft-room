@@ -85,14 +85,11 @@ html, body, [class*="css"] { font-size: 11px !important; }
 /* Tier divider text — muted, no extra space */
 hr { margin: 4px 0 !important; border-color: #1E3A5F !important; }
 
-/* Alternating left border color on bordered tier containers */
-[data-testid="stVerticalBlockBorderWrapper"]:nth-of-type(odd) {
-    border-left: 3px solid #0076B6 !important;
-    border-color: #1E3A5F #1E3A5F #1E3A5F #0076B6 !important;
-}
-[data-testid="stVerticalBlockBorderWrapper"]:nth-of-type(even) {
-    border-left: 3px solid #2A5A8C !important;
-    border-color: #1E3A5F #1E3A5F #1E3A5F #2A5A8C !important;
+/* Add visible gap between tier containers */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border: 1px solid #1E3A5F !important;
+    border-radius: 6px !important;
+    margin-bottom: 10px !important;
 }
 
 </style>
