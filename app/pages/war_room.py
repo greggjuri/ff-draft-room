@@ -140,21 +140,12 @@ def _render_position_column(position: str) -> None:
         tier_players = tier_groups[tier]
 
         # Alternating tier header background
-        tier_bg = "#132338" if tier % 2 == 0 else "#0D1B2A"
-        tier_class = f"tier-group-{position}-{tier}"
+        tier_bg = "#132338" if tier % 2 == 0 else "#1A4A6B"
         st.markdown(
-            f"<style>"
-            f".{tier_class} {{"
-            f"  background-color: {tier_bg} !important;"
-            f"  border-radius: 6px !important;"
-            f"  padding: 6px 4px !important;"
-            f"  margin-bottom: 6px !important;"
-            f"}}"
-            f"</style>"
-            f'<div class="{tier_class}">'
-            f"<span style='color:#555; font-size:0.8em;'>"
-            f"\u2500\u2500 TIER {tier} \u2500\u2500</span>"
-            f"</div>",
+            f'<div style="background:{tier_bg}; border-radius:4px; '
+            f'padding:3px 8px; margin:8px 0 4px 0; '
+            f'font-size:10px; letter-spacing:2px; color:#7AAFD4;">'
+            f"\u2014 TIER {tier} \u2014</div>",
             unsafe_allow_html=True,
         )
 
