@@ -28,7 +28,10 @@ export default function PlayerRow({
 
       <span className="player-rank">{player.position_rank}</span>
 
-      <button className="player-name-btn" onClick={onNameClick}>
+      <button
+        className={`player-name-btn ${player.tier % 2 === 0 ? 'tier-even' : 'tier-odd'}`}
+        onClick={onNameClick}
+      >
         {nameLabel}
       </button>
 

@@ -11,8 +11,7 @@
   border-radius: 3px;
 }
 
-.tier-odd  { background: var(--bg-tier-odd); }
-.tier-even { background: var(--bg-tier-even); }
+.tier-header { background: transparent; color: var(--text-muted); }
 
 .add-tier-btn {
   width: 100%;

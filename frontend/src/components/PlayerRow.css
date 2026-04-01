@@ -21,7 +21,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.player-name-btn:hover { background: var(--player-hover); }
+.player-name-btn.tier-odd  { background: #1A3A5C; }
+.player-name-btn.tier-even { background: #132338; }
+.player-name-btn:hover { background: var(--player-hover) !important; }
 
 .control-btn {
   background: var(--bg-secondary);
