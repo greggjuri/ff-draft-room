@@ -82,6 +82,6 @@
 .draft-dot.status-other     { background: #9B59B6; }
 
 /* Name box draft status overrides */
-.player-name-btn.status-mine  { background: #1B4332 !important; }
-.player-name-btn.status-other { background: #2D1B4E !important; color: #B8A8D0; }
+.player-name-btn.status-mine  { background: #1A7A3A !important; }
+.player-name-btn.status-other { background: #6B2FA0 !important; }
 
