@@ -7,6 +7,7 @@ import LoadDialog from './LoadDialog'
 import ResetConfirmDialog from './ResetConfirmDialog'
 import SetDefaultConfirmDialog from './SetDefaultConfirmDialog'
 import ExitDraftConfirmDialog from './ExitDraftConfirmDialog'
+import SearchBar from './SearchBar'
 import './WarRoom.css'
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE']
@@ -15,6 +16,7 @@ export default function WarRoom({
   rankings, dirty, profileName, mode, isDraft, hasPicks,
   getDraftStatus, onStatusClick, onEnterDraft, onExitDraft,
   exitDraftDialog, onConfirmExitDraft, onCancelExitDraft,
+  searchQuery, onSearchChange, searchResults, onSelectResult,
   onReorder, onSave,
   onSaveAsOpen, onLoadOpen, onResetOpen, onSetDefaultOpen,
   notesDialog, onNotesOpen, onNotesClose, onNotesUpdate,
@@ -50,6 +52,15 @@ export default function WarRoom({
             DRAFT
           </button>
         </div>
+
+        <SearchBar
+          query={searchQuery}
+          onChange={onSearchChange}
+          results={searchResults}
+          onSelectResult={onSelectResult}
+          isDraft={isDraft}
+          getDraftStatus={getDraftStatus}
+        />
 
         <span className="profile-name">{profileName}</span>
 

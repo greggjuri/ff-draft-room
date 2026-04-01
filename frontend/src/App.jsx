@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import WarRoom from './components/WarRoom'
 import {
   getPositionPlayers,
@@ -81,6 +81,33 @@ export default function App() {
     setMode('warroom')
     setDraftState({})
     setExitDraftDialog(false)
+  }
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase()
+    const results = []
+    for (const pos of POSITIONS) {
+      const matches = rankings[pos].filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.team.toLowerCase().includes(q)
+      ).slice(0, 5)
+      if (matches.length > 0) results.push({ position: pos, players: matches })
+    }
+    return results
+  }, [searchQuery, rankings])
+
+  const handleSelectResult = (position, rank) => {
+    setSearchQuery('')
+    const el = document.querySelector(`[data-player-id="${position}-${rank}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('search-highlight')
+      setTimeout(() => el.classList.remove('search-highlight'), 1500)
+    }
   }
 
   // Load all positions on mount
@@ -211,6 +238,10 @@ export default function App() {
         exitDraftDialog={exitDraftDialog}
         onConfirmExitDraft={confirmExitDraft}
         onCancelExitDraft={() => setExitDraftDialog(false)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchResults={searchResults}
+        onSelectResult={handleSelectResult}
         onReorder={handleReorder}
         onSave={handleSave}
         onSaveAsOpen={() => setSaveAsDialog(true)}

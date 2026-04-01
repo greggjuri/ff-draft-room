@@ -88,3 +88,10 @@
 .player-name-btn.status-mine  { background: #1A7A3A !important; }
 .player-name-btn.status-other { background: #6B2FA0 !important; }
 
+/* Search highlight */
+.player-row.search-highlight .player-name-btn {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  transition: outline 0.3s ease;
+}
+

@@ -12,7 +12,7 @@ export default function PlayerRow({
 
   if (isDraft) {
     return (
-      <div className="player-row draft-row">
+      <div className="player-row draft-row" data-player-id={`${position}-${player.position_rank}`}>
         <span
           className={`draft-dot status-${draftStatus}`}
           onClick={onStatusClick}
@@ -26,7 +26,7 @@ export default function PlayerRow({
   }
 
   return (
-    <div className="player-row">
+    <div className="player-row" data-player-id={`${position}-${player.position_rank}`}>
       <button
         className="control-btn"
         disabled={isFirst}
