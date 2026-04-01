@@ -1,0 +1,31 @@
+.position-column:not(:last-child) {
+  border-right: 1px solid var(--border);
+  padding-right: 32px;
+}
+
+.column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.column-position {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 3px;
+}
+
+.column-count {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.empty-column {
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 12px;
+  text-align: center;
+}

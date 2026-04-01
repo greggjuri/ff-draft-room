@@ -1,0 +1,59 @@
+.player-row {
+  display: grid;
+  grid-template-columns: 24px 24px 24px 1fr 36px 24px;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.player-name-btn {
+  background: var(--player-bg);
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 3px 8px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 3px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-name-btn:hover { background: var(--player-hover); }
+
+.control-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 10px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.control-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.control-btn:disabled { opacity: 0.25; cursor: default; }
+
+.delete-btn {
+  color: var(--text-muted);
+  border-color: transparent;
+  background: transparent;
+}
+.delete-btn:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }
+
+.player-team {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.player-rank {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-align: right;
+}

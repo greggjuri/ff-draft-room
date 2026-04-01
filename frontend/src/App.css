@@ -1,0 +1,139 @@
+:root {
+  --bg-primary:    #0D1B2A;
+  --bg-secondary:  #132338;
+  --bg-tier-odd:   #132338;
+  --bg-tier-even:  #0A1628;
+  --accent:        #0076B6;
+  --accent-hover:  #005A8E;
+  --border:        #1E3A5F;
+  --text-primary:  #E8E8E8;
+  --text-muted:    #6A8CAA;
+  --player-bg:     #1A3A5C;
+  --player-hover:  #0076B6;
+  --danger:        #C0392B;
+  --success:       #00C805;
+  --font:          'Courier New', Courier, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+}
+
+dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  padding: 24px;
+  min-width: 320px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.dialog-header {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dialog-buttons button {
+  flex: 1;
+  padding: 6px 12px;
+  font-family: var(--font);
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-danger {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: white;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.btn-cancel:hover { border-color: var(--text-primary); color: var(--text-primary); }
+
+.dialog-input {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.dialog-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dialog-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 8px;
+}
+
+.dialog-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dialog-error {
+  color: var(--danger);
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: var(--text-muted);
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+.error-banner {
+  background: var(--danger);
+  color: white;
+  padding: 12px 24px;
+  text-align: center;
+  font-size: 12px;
+}

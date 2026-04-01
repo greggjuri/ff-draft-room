@@ -1,0 +1,33 @@
+.tier-group {
+  margin-bottom: 4px;
+}
+
+.tier-header {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  margin: 8px 0 4px;
+  border-radius: 3px;
+}
+
+.tier-odd  { background: var(--bg-tier-odd); }
+.tier-even { background: var(--bg-tier-even); }
+
+.add-tier-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 10px;
+  padding: 4px;
+  margin-top: 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+.add-tier-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
