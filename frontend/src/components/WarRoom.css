@@ -1,4 +1,8 @@
 .war-room-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-primary);
   display: flex;
   align-items: center;
   gap: 16px;
