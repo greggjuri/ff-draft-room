@@ -264,3 +264,115 @@ def delete_player(
             rank += 1
 
     return new_profile
+
+
+# ---------------------------------------------------------------------------
+# Profile management
+# ---------------------------------------------------------------------------
+
+RESERVED_NAMES: set[str] = {"default", "seed"}
+
+_INVALID_CHARS = set("/\\")
+
+
+def _sanitize_name(name: str) -> str:
+    """Sanitize a profile name for use as a filename.
+
+    Strips whitespace, replaces spaces with underscores.
+    Raises ValueError on empty, reserved, or path-traversal names.
+    """
+    name = name.strip()
+    if not name:
+        raise ValueError("Profile name is required")
+    if ".." in name or any(c in name for c in _INVALID_CHARS):
+        raise ValueError("Invalid profile name")
+    if name.lower() in RESERVED_NAMES:
+        raise ValueError(f"'{name}' is a reserved name")
+    return name.replace(" ", "_")
+
+
+def list_profiles(rankings_dir: Path | None = None) -> list[str]:
+    """Return sorted list of profile display names.
+
+    Excludes default.json and seed.json.
+    """
+    if rankings_dir is None:
+        rankings_dir = RANKINGS_DIR
+    if not rankings_dir.exists():
+        return []
+    names = []
+    for f in sorted(rankings_dir.glob("*.json")):
+        stem = f.stem
+        if stem.lower() not in RESERVED_NAMES:
+            names.append(stem.replace("_", " "))
+    return names
+
+
+def save_profile_as(
+    profile: dict, name: str, rankings_dir: Path | None = None
+) -> dict:
+    """Save profile under a named file.
+
+    Returns dict with saved status, display name, and filename.
+    Raises ValueError on invalid name.
+    """
+    if rankings_dir is None:
+        rankings_dir = RANKINGS_DIR
+    sanitized = _sanitize_name(name)
+    filename = f"{sanitized}.json"
+    profile["name"] = name.strip()
+    rankings_dir.mkdir(parents=True, exist_ok=True)
+    with open(rankings_dir / filename, "w") as f:
+        json.dump(profile, f, indent=2)
+    return {"saved": True, "name": name.strip(), "filename": filename}
+
+
+def load_profile(name: str, rankings_dir: Path | None = None) -> dict:
+    """Load a named profile from disk.
+
+    Also copies to default.json so it becomes the active profile.
+    Raises ValueError on reserved names, FileNotFoundError if missing.
+    """
+    if rankings_dir is None:
+        rankings_dir = RANKINGS_DIR
+    if name.strip().lower() in RESERVED_NAMES:
+        raise ValueError(f"'{name}' is a reserved name")
+    sanitized = name.strip().replace(" ", "_")
+    path = rankings_dir / f"{sanitized}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"Profile not found: {name}")
+    with open(path) as f:
+        profile = json.load(f)
+    # Copy to default.json so it's loaded on next startup
+    with open(rankings_dir / "default.json", "w") as f:
+        json.dump(profile, f, indent=2)
+    return profile
+
+
+def save_seed(profile: dict, rankings_dir: Path | None = None) -> bool:
+    """Save current profile as seed.json baseline for future resets."""
+    if rankings_dir is None:
+        rankings_dir = RANKINGS_DIR
+    try:
+        rankings_dir.mkdir(parents=True, exist_ok=True)
+        with open(rankings_dir / "seed.json", "w") as f:
+            json.dump(profile, f, indent=2)
+        return True
+    except IOError:
+        return False
+
+
+def load_seed_or_csv(
+    df: pd.DataFrame, rankings_dir: Path | None = None
+) -> dict:
+    """Load seed.json if it exists, otherwise seed from CSV data."""
+    if rankings_dir is None:
+        rankings_dir = RANKINGS_DIR
+    seed_path = rankings_dir / "seed.json"
+    if seed_path.exists():
+        try:
+            with open(seed_path) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, KeyError):
+            logger.warning("seed.json corrupted — falling back to CSV seed.")
+    return seed_rankings(df)
