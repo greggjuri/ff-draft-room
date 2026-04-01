@@ -2,24 +2,27 @@
   display: grid;
   grid-template-columns: 24px 24px 24px 1fr 36px 24px;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   margin-bottom: 3px;
 }
 
 .player-name-btn {
-  background: var(--player-bg);
+  background: #1A3A5C;
   border: none;
   color: var(--text-primary);
   font-family: var(--font);
   font-size: 11px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   text-align: left;
   cursor: pointer;
   border-radius: 3px;
   width: 100%;
+  height: 26px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
 }
 .player-name-btn.tier-odd  { background: #1A3A5C; }
 .player-name-btn.tier-even { background: #2A5A8C; }
