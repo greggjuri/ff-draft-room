@@ -10,18 +10,31 @@ _None_
 ## Backlog
 
 ### Phase 1c — Polish
-- [ ] `07-init-k-dst.md` — Add K and D/ST columns
+- [ ] `09-init-k-dst.md` — Add K and D/ST columns
 - [ ] Export rankings to CSV
 - [ ] Rename / delete saved profiles
 
 ### Phase 2 — Live Draft (future)
-- [ ] Snake draft board, mark picks mine/other
+- [ ] Full draft board with round/pick tracking
 - [ ] Best available board
 - [ ] My roster view, needs tracker, scarcity alerts
 
 ---
 
 ## Recently Completed
+
+- [x] `08-init-search.md` — Global Player Search
+  - Commit: `f7d3743`
+  - SearchBar component with dropdown overlay, in-memory filtering
+  - Scroll-to-player with 1.5s highlight on result click
+  - Works in both War Room and Draft Mode
+
+- [x] `07-init-draft-mode.md` — Draft Mode
+  - Commit: `7992c01`
+  - WAR ROOM | DRAFT toggle in header
+  - Status dot per player: undrafted → mine → other cycling
+  - Controls hidden in draft mode, exit confirm dialog
+  - Pure frontend — no backend changes
 
 - [x] `06-init-profile-management.md` — Profile Management
   - Commits: `a190560`, `83922b4`, `5dc8df4`
@@ -116,4 +129,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-03-31 (profile management complete)*
+*Last updated: 2026-03-31 (draft mode + search complete)*

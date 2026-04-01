@@ -30,7 +30,7 @@ It is infrastructure, not UI.
 │              FASTAPI BACKEND (localhost:8000)            │
 │                                                         │
 │  backend/main.py              — FastAPI app + CORS      │
-│  backend/routers/rankings.py  — API routes (13 total)   │
+│  backend/routers/rankings.py  — API routes (14 total)   │
 │  backend/utils/               — Python logic layer      │
 │    data_loader.py             — CSV parsing ✅ tested   │
 │    rankings.py                — Profile CRUD ✅ tested  │
@@ -199,7 +199,9 @@ ff-draft-room/
 │           ├── SaveAsDialog.jsx
 │           ├── LoadDialog.jsx
 │           ├── ResetConfirmDialog.jsx
-│           └── SetDefaultConfirmDialog.jsx
+│           ├── SetDefaultConfirmDialog.jsx
+│           ├── ExitDraftConfirmDialog.jsx
+│           └── SearchBar.jsx
 └── tests/
     ├── conftest.py              # sys.path → backend/
     ├── test_data_loader.py      ✅ 8 passing
@@ -219,8 +221,10 @@ ff-draft-room/
 
 #### 1b — Stack Migration ✅ Complete
 - [x] `04-init-fastapi-backend.md` — FastAPI backend, 13 endpoints
-- [x] `05-init-react-frontend.md` — React frontend, 11 components
+- [x] `05-init-react-frontend.md` — React frontend, 13 components
 - [x] `06-init-profile-management.md` — Save As, Load, Reset, Set Default
+- [x] `07-init-draft-mode.md` — Draft mode with status dot cycling
+- [x] `08-init-search.md` — Global player search with scroll-to-highlight
 
 #### 1c — Polish (next)
 - [ ] K and D/ST columns

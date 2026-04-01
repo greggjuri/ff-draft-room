@@ -84,6 +84,24 @@ cd frontend && npm run dev
 - [ ] ★ SET DEFAULT → writes seed.json
 - [ ] Profile name shown in header
 
+### Checklist — Draft Mode
+- [ ] Click DRAFT toggle → draft mode, controls hidden
+- [ ] Status dots visible on all players
+- [ ] Click dot → cycles undrafted → mine (green) → other (purple)
+- [ ] Exit with picks → confirm dialog
+- [ ] Exit without picks → immediate
+- [ ] Notes dialog disabled in draft mode
+
+### Checklist — Search
+- [ ] Search box visible in header (both modes)
+- [ ] Type "allen" → dropdown shows matches grouped by position
+- [ ] Matching text bolded in results
+- [ ] Click result → scrolls to player, blue outline highlight
+- [ ] Escape clears search
+- [ ] × button clears search
+- [ ] "zzzzz" → "No players found"
+- [ ] Header sticks to top on scroll
+
 ### Checklist — Error Handling
 - [ ] Backend down → error banner shown
 - [ ] Duplicate add → inline error in dialog
@@ -151,4 +169,4 @@ def test_save_as_creates_file(tmp_path):
 
 ---
 
-*Last updated: 2026-03-31 (profile management + React frontend)*
+*Last updated: 2026-03-31 (draft mode + search complete)*

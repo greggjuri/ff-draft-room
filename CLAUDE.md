@@ -101,7 +101,9 @@ ff-draft-room/
 │           ├── SaveAsDialog.jsx
 │           ├── LoadDialog.jsx
 │           ├── ResetConfirmDialog.jsx
-│           └── SetDefaultConfirmDialog.jsx
+│           ├── SetDefaultConfirmDialog.jsx
+│           ├── ExitDraftConfirmDialog.jsx
+│           └── SearchBar.jsx
 └── tests/
     ├── test_data_loader.py      ✅ 8 passing
     ├── test_rankings.py         ✅ 27 passing
@@ -144,6 +146,25 @@ PUT    /api/rankings/{position}/{rank}/notes { notes }
 - **Unsaved indicator**: shown after any change, cleared on save
 - **Profile name**: shown in header, updates on Save As / Load
 - **Player depth**: QB 30 / RB 50 / WR 50 / TE 30
+- **Sticky header**: stays at top of viewport on scroll
+
+## Draft Mode
+
+- **Toggle**: `WAR ROOM | DRAFT` button in header
+- **Controls hidden**: ▲▼, ×, add buttons, save toolbar all hidden
+- **Status dot**: clickable circle on each player, cycles undrafted → mine → other
+- **Colors**: mine = green `#1A7A3A`, other = purple `#6B2FA0`
+- **In-memory only**: draft state resets on exit, never persisted
+- **Exit confirm**: dialog shown if any picks are marked
+
+## Global Search
+
+- **Search bar**: in header between mode toggle and profile name
+- **In-memory filter**: matches player name or team across all 4 positions
+- **Dropdown**: grouped by position, max 5 per group, matching text bolded
+- **Click result**: scrolls to player row, 1.5s Honolulu Blue outline highlight
+- **Keyboard**: Escape clears and closes
+- **Works in both modes**: shows draft status dots in Draft Mode
 
 ## Design System
 
