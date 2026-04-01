@@ -76,6 +76,35 @@
   color: var(--danger);
 }
 
+.mode-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.mode-toggle-btn {
+  padding: 4px 12px;
+  background: transparent;
+  border: none;
+  font-family: var(--font);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.mode-toggle-btn.active-warroom {
+  border-right: 1px solid var(--border);
+  color: var(--accent);
+}
+
+.mode-toggle-btn.active-draft {
+  color: #00C805;
+}
+
 .war-room-columns {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

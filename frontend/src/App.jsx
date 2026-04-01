@@ -41,6 +41,48 @@ export default function App() {
   const [resetDialog, setResetDialog] = useState(false)
   const [setDefaultDialog, setSetDefaultDialog] = useState(false)
 
+  // Draft mode state
+  const [mode, setMode] = useState('warroom')
+  const [draftState, setDraftState] = useState({})
+  const [exitDraftDialog, setExitDraftDialog] = useState(false)
+
+  const isDraft = mode === 'draft'
+  const hasPicks = Object.keys(draftState).length > 0
+
+  const getDraftStatus = (position, rank) =>
+    draftState[`${position}-${rank}`] || 'undrafted'
+
+  const cycleDraftStatus = (position, rank) => {
+    const key = `${position}-${rank}`
+    const current = draftState[key] || 'undrafted'
+    const next = { undrafted: 'mine', mine: 'other', other: 'undrafted' }[current]
+    setDraftState(prev => {
+      const updated = { ...prev, [key]: next }
+      if (next === 'undrafted') delete updated[key]
+      return updated
+    })
+  }
+
+  const enterDraftMode = () => {
+    setMode('draft')
+    setDraftState({})
+  }
+
+  const exitDraftMode = () => {
+    if (hasPicks) {
+      setExitDraftDialog(true)
+    } else {
+      setMode('warroom')
+      setDraftState({})
+    }
+  }
+
+  const confirmExitDraft = () => {
+    setMode('warroom')
+    setDraftState({})
+    setExitDraftDialog(false)
+  }
+
   // Load all positions on mount
   useEffect(() => {
     reloadAllPositions(setRankings)
@@ -159,6 +201,16 @@ export default function App() {
         rankings={rankings}
         dirty={dirty}
         profileName={profileName}
+        mode={mode}
+        isDraft={isDraft}
+        hasPicks={hasPicks}
+        getDraftStatus={getDraftStatus}
+        onStatusClick={cycleDraftStatus}
+        onEnterDraft={enterDraftMode}
+        onExitDraft={exitDraftMode}
+        exitDraftDialog={exitDraftDialog}
+        onConfirmExitDraft={confirmExitDraft}
+        onCancelExitDraft={() => setExitDraftDialog(false)}
         onReorder={handleReorder}
         onSave={handleSave}
         onSaveAsOpen={() => setSaveAsDialog(true)}

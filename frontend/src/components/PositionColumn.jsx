@@ -2,7 +2,8 @@ import TierGroup from './TierGroup'
 import './PositionColumn.css'
 
 export default function PositionColumn({
-  position, players, onReorder, onNotesOpen, onAddOpen, onDeleteOpen,
+  position, players, isDraft, getDraftStatus, onStatusClick,
+  onReorder, onNotesOpen, onAddOpen, onDeleteOpen,
 }) {
   // Group players by tier
   const tierGroups = {}
@@ -30,6 +31,9 @@ export default function PositionColumn({
           tierNum={tierNum}
           players={tierGroups[tierNum]}
           lastRank={lastRank}
+          isDraft={isDraft}
+          getDraftStatus={getDraftStatus}
+          onStatusClick={onStatusClick}
           onReorder={onReorder}
           onNotesOpen={onNotesOpen}
           onAddOpen={onAddOpen}
