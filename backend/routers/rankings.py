@@ -11,8 +11,13 @@ from utils.rankings import (
     add_player,
     delete_player,
     get_position_players,
+    list_profiles,
     load_or_seed,
+    load_profile,
+    load_seed_or_csv,
+    save_profile_as,
     save_rankings,
+    save_seed,
     seed_rankings,
     swap_players,
 )
@@ -67,6 +72,14 @@ class NotesRequest(BaseModel):
     notes: str
 
 
+class SaveAsRequest(BaseModel):
+    name: str
+
+
+class LoadRequest(BaseModel):
+    name: str
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -98,6 +111,59 @@ def seed() -> dict:
             status_code=500, detail="No 2025 data found in data/players/"
         )
     profile = seed_rankings(df)
+    save_rankings(profile)
+    _set_profile(profile)
+    return profile
+
+
+@router.get("/profiles")
+def get_profiles() -> list[str]:
+    """Return list of saved profile names (excludes default and seed)."""
+    return list_profiles()
+
+
+@router.post("/save-as")
+def save_as(body: SaveAsRequest) -> dict:
+    """Save current profile under a new name."""
+    try:
+        result = save_profile_as(get_profile(), body.name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    _set_profile(get_profile())  # name field was updated in-place
+    return result
+
+
+@router.post("/load")
+def load(body: LoadRequest) -> dict:
+    """Load a named profile as the active profile."""
+    try:
+        profile = load_profile(body.name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    _set_profile(profile)
+    return profile
+
+
+@router.post("/set-default")
+def set_default() -> dict:
+    """Save current profile as seed.json baseline for future resets."""
+    success = save_seed(get_profile())
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save baseline")
+    return {"saved": True}
+
+
+@router.post("/reset")
+def reset() -> dict:
+    """Reset rankings to seed.json baseline or CSV data."""
+    df = load_all_players()
+    profile = load_seed_or_csv(df)
+    if not profile.get("players"):
+        raise HTTPException(
+            status_code=500, detail="Reset failed: no data available"
+        )
     save_rankings(profile)
     _set_profile(profile)
     return profile
