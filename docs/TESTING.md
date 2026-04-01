@@ -4,9 +4,9 @@
 
 ```
         /\
-       /  \     Manual Streamlit UI (each page after PRP)
+       /  \     Manual browser UI (each PRP)
       /----\
-     /      \   Integration (data loading + rendering)
+     /      \   API integration (curl verification)
     /--------\
    /          \ Unit — utils/ functions (many, automated)
   --------------
@@ -16,176 +16,139 @@
 
 | Test Type | When | Tools |
 |-----------|------|-------|
-| Unit | Every change to `app/utils/` | pytest |
-| Integration | After each PRP execution | `streamlit run` + manual |
-| Manual UI | After each page feature | Browser inspection |
+| Unit | Every change to `backend/utils/` | pytest |
+| API | After each backend PRP | curl + uvicorn |
+| Manual UI | After each frontend PRP | Browser at localhost:5173 |
 
 ## Automated Tests
 
 ```bash
 # Run all tests with coverage
-cd ff-draft-room && pytest tests/ --cov=app --cov-report=term-missing
+pytest tests/ --cov=backend --cov-report=term-missing
 
 # Run specific module
-pytest tests/test_data_loader.py -v
+pytest tests/test_rankings.py -v
 
 # Run with short output
 pytest tests/ -q
 ```
 
-**Minimum Coverage**: 80% for `app/utils/`  
-Coverage for `app/pages/` and `app/components/` is manual only (Streamlit UI is hard to unit test).
+**Current test count**: 49 passing, 1 skipped (vor placeholder)
 
-## Manual Integration Testing
+**Minimum Coverage**: 80% for `backend/utils/`
 
-Required after every PRP execution. Run the app and verify:
+## Test Files
+
+```
+tests/
+├── conftest.py                  # sys.path → backend/
+├── test_data_loader.py          # 8 tests — CSV loading + normalization
+├── test_rankings.py             # 27 tests — seed, CRUD, swap, add, delete
+├── test_profile_management.py   # 14 tests — list, save-as, load, reset, seed
+└── test_vor.py                  # Future (1 skipped placeholder)
+```
+
+## Manual UI Testing
+
+Required after every frontend PRP. Run both servers:
 
 ### Setup
 ```bash
-cd ff-draft-room
-streamlit run app/main.py
-# Open http://localhost:8501
+# Terminal 1
+source .venv/bin/activate
+uvicorn backend.main:app --reload
+
+# Terminal 2
+cd frontend && npm run dev
+# Open http://localhost:5173
 ```
 
-### Checklist — Every PRP
-- [ ] App starts without errors in terminal
-- [ ] Page loads without red Streamlit error box
-- [ ] Feature works end-to-end (happy path)
-- [ ] Error states handled gracefully (missing file, bad data)
+### Checklist — War Room Core
+- [ ] 4 columns visible: QB / RB / WR / TE
+- [ ] Correct player counts: QB 30 / RB 50 / WR 50 / TE 30
+- [ ] Tier headers visible with alternating player name backgrounds
+- [ ] ▲▼ reorders players, ranks update immediately
+- [ ] ▲ disabled on rank 1, ▼ disabled on last rank
+- [ ] Click player name → notes dialog, pre-filled
+- [ ] Save notes → 📝 appears
+- [ ] [+ Position · Tier N] → add dialog, validation works
+- [ ] [×] → confirm dialog, delete removes player
+- [ ] ● UNSAVED indicator after changes
+- [ ] SAVE clears indicator
 
-### Checklist — History Browser
-- [ ] All positions load (QB, RB, WR, TE)
-- [ ] All years load (2020–2025)
-- [ ] Sort by any column works
-- [ ] Search/filter narrows results correctly
-- [ ] Row count matches expected (QB: 20, RB: 40, WR: 50, TE: 20)
-- [ ] "All years" view combines all correctly
+### Checklist — Profile Management
+- [ ] SAVE AS → dialog, saves named profile
+- [ ] LOAD → lists profiles, loads selected
+- [ ] LOAD → warns if unsaved changes
+- [ ] RESET → restores from seed.json or CSV
+- [ ] ★ SET DEFAULT → writes seed.json
+- [ ] Profile name shown in header
 
-### Checklist — War Room Rankings
-- [ ] Loads default baseline on first open
-- [ ] Can reorder players
-- [ ] Tier assignment saves correctly
-- [ ] Notes field saves and persists
-- [ ] Save profile writes JSON to `data/rankings/`
-- [ ] Load profile restores state correctly
-- [ ] Profile list shows all saved profiles
+### Checklist — Error Handling
+- [ ] Backend down → error banner shown
+- [ ] Duplicate add → inline error in dialog
+- [ ] Empty name/team → inline error
 
-### Checklist — VOR / Analysis
-- [ ] VOR scores calculated for all positions
-- [ ] Replacement level thresholds produce sensible results
-- [ ] Chart renders without error
-- [ ] Positive VOR = above replacement, negative = below
+## API Integration Testing (curl)
+
+```bash
+BASE="http://localhost:8000/api"
+
+# Health
+curl -s http://localhost:8000/health
+
+# Rankings CRUD
+curl -s $BASE/rankings
+curl -s $BASE/rankings/QB
+curl -s -X POST $BASE/rankings/QB/reorder -H "Content-Type: application/json" -d '{"rank_a":1,"rank_b":2}'
+curl -s -X POST $BASE/rankings/QB/add -H "Content-Type: application/json" -d '{"name":"Test","team":"TST","tier":1}'
+curl -s -X DELETE $BASE/rankings/QB/31
+curl -s -X PUT $BASE/rankings/QB/1/notes -H "Content-Type: application/json" -d '{"notes":"Test"}'
+curl -s -X POST $BASE/rankings/save
+
+# Profile management
+curl -s $BASE/rankings/profiles
+curl -s -X POST $BASE/rankings/save-as -H "Content-Type: application/json" -d '{"name":"Test Profile"}'
+curl -s -X POST $BASE/rankings/load -H "Content-Type: application/json" -d '{"name":"Test Profile"}'
+curl -s -X POST $BASE/rankings/set-default
+curl -s -X POST $BASE/rankings/reset
+```
 
 ## Testing Patterns
 
 ### Unit Test Structure
 ```python
-# tests/test_data_loader.py
 import pytest
-import pandas as pd
-from app.utils.data_loader import load_players, normalize_dataframe
+from utils.rankings import seed_rankings, swap_players
 
-def test_load_players_returns_dataframe(tmp_path):
-    """load_players returns a DataFrame with correct columns."""
-    # Arrange — create minimal CSV
-    csv = tmp_path / "QB_2024.csv"
-    csv.write_text('"#","Player","Pos","Team","GP","AVG","TTL"\n"1","Josh Allen","QB","BUF","17","22.0","374.6"\n')
-    
-    # Act
-    df = load_players("QB", 2024, data_dir=tmp_path)
-    
-    # Assert
-    assert isinstance(df, pd.DataFrame)
-    assert list(df.columns) == ["rank", "name", "team", "position", "year", "gp", "ppg", "total_pts"]
-    assert len(df) == 1
+def test_swap_exchanges_ranks(sample_profile):
+    result = swap_players(sample_profile, "QB", 2, 3)
+    qbs = get_position_players(result, "QB")
+    assert qbs[1]["name"] == "P3"
 
-def test_load_players_missing_file_returns_empty(tmp_path):
-    """load_players returns empty DataFrame when file not found."""
-    df = load_players("QB", 1990, data_dir=tmp_path)
-    assert df.empty
-
-def test_normalize_dataframe_correct_dtypes():
-    """normalize_dataframe enforces correct column types."""
-    raw = pd.DataFrame({
-        "#": ["1"], "Player": ["Josh Allen"], "Team": ["BUF"],
-        "GP": ["17"], "AVG": ["22.0"], "TTL": ["374.6"]
-    })
-    df = normalize_dataframe(raw, position="QB", year=2024)
-    assert df["gp"].dtype == int
-    assert df["ppg"].dtype == float
-    assert df["total_pts"].dtype == float
+def test_swap_does_not_mutate_input(sample_profile):
+    original = copy.deepcopy(sample_profile)
+    swap_players(sample_profile, "QB", 2, 3)
+    assert sample_profile == original
 ```
 
-### VOR Unit Tests
+### Profile Test Structure
 ```python
-# tests/test_vor.py
-from app.utils.vor import calculate_vor, get_replacement_level
-
-def test_vor_positive_for_top_players():
-    """Top players should have positive VOR."""
-    players = [{"name": f"Player {i}", "total_pts": 400 - i*10} for i in range(20)]
-    vor_scores = calculate_vor(players, position="QB", replacement_rank=13)
-    assert vor_scores[0]["vor"] > 0
-    assert vor_scores[12]["vor"] == 0   # replacement level player
-
-def test_vor_negative_below_replacement():
-    """Players below replacement rank have negative VOR."""
-    players = [{"name": f"Player {i}", "total_pts": 400 - i*10} for i in range(20)]
-    vor_scores = calculate_vor(players, position="QB", replacement_rank=13)
-    assert vor_scores[13]["vor"] < 0
+def test_save_as_creates_file(tmp_path):
+    profile = _sample_profile()
+    result = save_profile_as(profile, "Mock Draft 1", rankings_dir=tmp_path)
+    assert result["saved"] is True
+    assert (tmp_path / "Mock_Draft_1.json").exists()
 ```
-
-### Rankings Unit Tests
-```python
-# tests/test_rankings.py
-import json
-from app.utils.rankings import save_profile, load_profile, list_profiles
-
-def test_save_and_load_profile_roundtrip(tmp_path):
-    """Profile saved to JSON loads back identically."""
-    profile = {
-        "name": "Test Profile",
-        "players": [{"rank": 1, "name": "Josh Allen", "tier": 1}]
-    }
-    save_profile(profile, "test", rankings_dir=tmp_path)
-    loaded = load_profile("test", rankings_dir=tmp_path)
-    assert loaded["name"] == profile["name"]
-    assert loaded["players"] == profile["players"]
-
-def test_list_profiles_returns_names(tmp_path):
-    """list_profiles returns names of all saved profiles."""
-    (tmp_path / "profile1.json").write_text('{"name": "P1"}')
-    (tmp_path / "profile2.json").write_text('{"name": "P2"}')
-    names = list_profiles(rankings_dir=tmp_path)
-    assert set(names) == {"profile1", "profile2"}
-```
-
-## Common Bugs to Watch For
-
-| Bug | How to Detect | Fix |
-|-----|--------------|-----|
-| CSV column mismatch | KeyError on df["TTL"] | Check FantasyPros export format per year |
-| Streamlit rerun loop | Infinite spinner | Check for state mutation outside callbacks |
-| Cache stale after CSV update | Old data showing | `st.cache_data.clear()` or restart |
-| Session state lost on page nav | Rankings reset | Initialize state in `main.py`, not page files |
-| Float formatting in table | `374.600000` | Use `.round(1)` or `.map("{:.1f}".format)` |
-| Plotly chart not rendering | Blank space | Check for empty DataFrame before calling chart |
-
-## Debugging Workflow
-
-1. **Reproduce**: Confirm bug exists with minimal steps
-2. **Terminal**: Check `streamlit run` output for Python tracebacks
-3. **Browser**: Check browser console (F12) for JS errors
-4. **Data inspection**: Add `st.dataframe(df.head())` temporarily
-5. **State inspection**: Add `st.write(st.session_state)` temporarily
-6. **Fix**: Minimal change
-7. **Clean up**: Remove debug output before committing
 
 ## Pre-Commit Checklist
 
-- [ ] `pytest tests/ -q` passes
-- [ ] Coverage ≥ 80% for `app/utils/`
-- [ ] `ruff check app/ tests/` — no errors
-- [ ] App starts cleanly: `streamlit run app/main.py`
-- [ ] Manual test of affected page completed
-- [ ] Debug output removed (`st.write`, `print`)
+- [ ] `pytest tests/ -q` passes (49+)
+- [ ] `ruff check backend/ tests/` — no errors
+- [ ] `cd frontend && npx vite build` — no errors
+- [ ] Backend starts: `uvicorn backend.main:app --reload`
+- [ ] Manual test of affected feature completed
+
+---
+
+*Last updated: 2026-03-31 (profile management + React frontend)*

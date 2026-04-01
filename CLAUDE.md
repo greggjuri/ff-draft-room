@@ -89,7 +89,7 @@ ff-draft-room/
 │   ├── vite.config.js
 │   └── src/
 │       ├── App.jsx
-│       ├── api/rankings.js      # All fetch() calls
+│       ├── api/rankings.js      # All fetch() calls (11 functions)
 │       └── components/
 │           ├── WarRoom.jsx
 │           ├── PositionColumn.jsx
@@ -97,19 +97,30 @@ ff-draft-room/
 │           ├── PlayerRow.jsx
 │           ├── NotesDialog.jsx
 │           ├── AddPlayerDialog.jsx
-│           └── DeleteConfirmDialog.jsx
+│           ├── DeleteConfirmDialog.jsx
+│           ├── SaveAsDialog.jsx
+│           ├── LoadDialog.jsx
+│           ├── ResetConfirmDialog.jsx
+│           └── SetDefaultConfirmDialog.jsx
 └── tests/
     ├── test_data_loader.py      ✅ 8 passing
     ├── test_rankings.py         ✅ 27 passing
+    ├── test_profile_management.py ✅ 14 passing
     └── test_vor.py              # Future
 ```
 
 ## API Routes
 
 ```
+GET    /health
 GET    /api/rankings
 POST   /api/rankings/save
 POST   /api/rankings/seed
+GET    /api/rankings/profiles
+POST   /api/rankings/save-as                 { name }
+POST   /api/rankings/load                    { name }
+POST   /api/rankings/set-default
+POST   /api/rankings/reset
 GET    /api/rankings/{position}
 POST   /api/rankings/{position}/reorder      { rank_a, rank_b }
 POST   /api/rankings/{position}/add          { name, team, tier }
@@ -126,7 +137,12 @@ PUT    /api/rankings/{position}/{rank}/notes { notes }
 - **[+ Position · Tier N]**: add player dialog (name + team, placed at tier end)
 - **[×]**: delete confirm dialog before removal
 - **Save button**: manual save → POST /api/rankings/save
+- **Save As**: save named profile snapshot
+- **Load**: load a saved profile (warns if unsaved changes)
+- **Reset**: restore from seed.json baseline or CSV fallback
+- **Set Default**: save current rankings as seed.json baseline
 - **Unsaved indicator**: shown after any change, cleared on save
+- **Profile name**: shown in header, updates on Save As / Load
 - **Player depth**: QB 30 / RB 50 / WR 50 / TE 30
 
 ## Design System
@@ -134,8 +150,8 @@ PUT    /api/rankings/{position}/{rank}/notes { notes }
 - **Background**: `#0D1B2A` (dark navy)
 - **Primary accent**: `#0076B6` (Honolulu Blue — Detroit Lions)
 - **Font**: monospace everywhere
-- **Player name boxes**: `#1A3A5C` background, `#E8E8E8` text, hover `#0076B6`
-- **Tier headers**: alternating `#132338` / `#1A4A6B`
+- **Player name boxes**: odd tiers `#1A3A5C`, even tiers `#2A5A8C`, hover `#0076B6`
+- **Tier headers**: transparent background, muted text
 - **Column dividers**: `1px solid #1E3A5F` with `gap="large"` equivalent spacing
 
 ## Key Project Files

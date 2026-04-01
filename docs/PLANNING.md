@@ -21,6 +21,7 @@ It is infrastructure, not UI.
 │  │   QB | RB | WR | TE  (side-by-side columns)     │   │
 │  │   Tier groups · ▲▼ reorder · notes dialog       │   │
 │  │   Add player · Delete player · Save              │   │
+│  │   Save As · Load · Reset · Set Default           │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
                           │ REST API
@@ -29,7 +30,7 @@ It is infrastructure, not UI.
 │              FASTAPI BACKEND (localhost:8000)            │
 │                                                         │
 │  backend/main.py              — FastAPI app + CORS      │
-│  backend/routers/rankings.py  — API routes              │
+│  backend/routers/rankings.py  — API routes (13 total)   │
 │  backend/utils/               — Python logic layer      │
 │    data_loader.py             — CSV parsing ✅ tested   │
 │    rankings.py                — Profile CRUD ✅ tested  │
@@ -69,11 +70,18 @@ It is infrastructure, not UI.
 
 ## API Design
 
-### Rankings endpoints
+### Rankings endpoints (13 total)
 ```
+GET    /health                                → health check
 GET    /api/rankings                          → load current profile
 POST   /api/rankings/save                     → save current profile
-POST   /api/rankings/seed                     → re-seed from CSV (reset)
+POST   /api/rankings/seed                     → re-seed from CSV (nuclear)
+
+GET    /api/rankings/profiles                 → list saved profiles
+POST   /api/rankings/save-as                  → save as named profile
+POST   /api/rankings/load                     → load a named profile
+POST   /api/rankings/set-default              → set seed.json baseline
+POST   /api/rankings/reset                    → reset to baseline or CSV
 
 GET    /api/rankings/{position}               → players for one position
 POST   /api/rankings/{position}/reorder       → swap two players (▲▼)
@@ -93,8 +101,11 @@ PUT    /api/rankings/{position}/{rank}/notes  → update player notes
 // PUT /api/rankings/{position}/{rank}/notes
 { "notes": "Elite rushing upside" }
 
-// All mutation responses return updated position player list
-[{ "position_rank": 1, "name": "...", "team": "...", "tier": 1, "notes": "" }]
+// POST /api/rankings/save-as
+{ "name": "Mock Draft 1" }
+
+// POST /api/rankings/load
+{ "name": "Mock Draft 1" }
 ```
 
 ## Data Model
@@ -122,6 +133,14 @@ PUT    /api/rankings/{position}/{rank}/notes  → update player notes
 }
 ```
 
+### Profile Storage
+```
+data/rankings/
+  default.json       ← active working profile
+  seed.json          ← custom reset baseline (optional)
+  {name}.json        ← named snapshots via Save As
+```
+
 ### Seeding Limits
 ```
 QB: top 30 · RB: top 50 · WR: top 50 · TE: top 30
@@ -132,27 +151,28 @@ QB: top 30 · RB: top 50 · WR: top 50 · TE: top 30
 ```
 ff-draft-room/
 ├── CLAUDE.md
-├── README.md
 ├── .gitignore
+├── requirements.txt
 ├── assets/
 │   └── ff-logo.jpg
 ├── docs/
 │   ├── PLANNING.md
 │   ├── TASK.md
-│   └── DECISIONS.md
+│   ├── DECISIONS.md
+│   └── TESTING.md
 ├── initials/
 ├── prps/
 ├── data/
 │   ├── players/             # FantasyPros CSVs (read-only)
 │   └── rankings/            # JSON profiles (user data)
 ├── backend/
-│   ├── main.py              # FastAPI app, CORS
+│   ├── main.py              # FastAPI app, CORS, sys.path
 │   ├── routers/
-│   │   └── rankings.py      # /api/rankings/* routes
-│   └── utils/               # Ported from app/utils/
+│   │   └── rankings.py      # /api/rankings/* routes (13 endpoints)
+│   └── utils/
 │       ├── __init__.py
-│       ├── data_loader.py   ✅
-│       ├── rankings.py      ✅
+│       ├── data_loader.py   ✅ 8 tests
+│       ├── rankings.py      ✅ 41 tests (27 core + 14 profile)
 │       └── constants.py     ✅
 ├── frontend/
 │   ├── index.html
@@ -163,19 +183,29 @@ ff-draft-room/
 │       ├── App.jsx
 │       ├── App.css
 │       ├── api/
-│       │   └── rankings.js       # All fetch() calls
+│       │   └── rankings.js       # All fetch() calls (11 functions)
 │       └── components/
 │           ├── WarRoom.jsx
+│           ├── WarRoom.css
 │           ├── PositionColumn.jsx
+│           ├── PositionColumn.css
 │           ├── TierGroup.jsx
+│           ├── TierGroup.css
 │           ├── PlayerRow.jsx
+│           ├── PlayerRow.css
 │           ├── NotesDialog.jsx
 │           ├── AddPlayerDialog.jsx
-│           └── DeleteConfirmDialog.jsx
+│           ├── DeleteConfirmDialog.jsx
+│           ├── SaveAsDialog.jsx
+│           ├── LoadDialog.jsx
+│           ├── ResetConfirmDialog.jsx
+│           └── SetDefaultConfirmDialog.jsx
 └── tests/
-    ├── test_data_loader.py  ✅ 8 passing
-    ├── test_rankings.py     ✅ 27 passing
-    └── test_vor.py          # Future
+    ├── conftest.py              # sys.path → backend/
+    ├── test_data_loader.py      ✅ 8 passing
+    ├── test_rankings.py         ✅ 27 passing
+    ├── test_profile_management.py ✅ 14 passing
+    └── test_vor.py              # Future
 ```
 
 ## Development Phases
@@ -187,17 +217,15 @@ ff-draft-room/
 - [x] Rankings CRUD + seed logic (`rankings.py`)
 - [x] 43 tests passing, 84% coverage on utils
 
-#### 1b — Stack Migration (current focus)
-- [ ] `04-init-fastapi-react-migration.md`
-  - Retire Streamlit entirely
-  - FastAPI backend wrapping existing utils
-  - Vite + React frontend — full War Room UI
-  - All features from Streamlit version, done properly
+#### 1b — Stack Migration ✅ Complete
+- [x] `04-init-fastapi-backend.md` — FastAPI backend, 13 endpoints
+- [x] `05-init-react-frontend.md` — React frontend, 11 components
+- [x] `06-init-profile-management.md` — Save As, Load, Reset, Set Default
 
-#### 1c — Polish (future)
+#### 1c — Polish (next)
 - [ ] K and D/ST columns
-- [ ] Multiple named profiles
 - [ ] Export rankings to CSV
+- [ ] Rename/delete saved profiles
 
 ### Phase 2: Live Draft (future)
 - [ ] Snake draft board, mark picks

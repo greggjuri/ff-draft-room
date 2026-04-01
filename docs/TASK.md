@@ -1,25 +1,18 @@
 # FF Draft Room - Task Tracker
 
-## Current Sprint: Phase 1b — Stack Migration
+## Current Sprint: Phase 1c — Polish
 
 ### In Progress
-- [ ] `04-init-fastapi-react-migration.md` — Retire Streamlit, build FastAPI + React
+_None_
 
 ---
 
 ## Backlog
 
-### Phase 1b — Migration (current focus)
-- [ ] `04-init-fastapi-react-migration.md` — Full stack replacement:
-  - FastAPI backend with REST API wrapping existing utils/
-  - Vite + React frontend
-  - Full War Room: QB/RB/WR/TE columns, tier groups, ▲▼ reorder,
-    notes dialog, add player, delete player, save
-
-### Phase 1c — Polish (future)
-- [ ] `05-init-k-dst.md` — Add K and D/ST columns
-- [ ] `06-init-rankings-profiles.md` — Multiple saved profiles
+### Phase 1c — Polish
+- [ ] `07-init-k-dst.md` — Add K and D/ST columns
 - [ ] Export rankings to CSV
+- [ ] Rename / delete saved profiles
 
 ### Phase 2 — Live Draft (future)
 - [ ] Snake draft board, mark picks mine/other
@@ -30,30 +23,41 @@
 
 ## Recently Completed
 
+- [x] `06-init-profile-management.md` — Profile Management
+  - Commits: `a190560`, `83922b4`, `5dc8df4`
+  - Save As, Load, Reset, Set as Default
+  - 5 new backend endpoints, 4 new frontend dialogs
+  - 14 new tests (49 total passing)
+
+- [x] `05-init-react-frontend.md` — React War Room Frontend
+  - Commit: `89a7c20`
+  - 7 components: WarRoom, PositionColumn, TierGroup, PlayerRow,
+    NotesDialog, AddPlayerDialog, DeleteConfirmDialog
+  - Full CSS control with design tokens, native HTML `<dialog>`
+  - Vite proxy to FastAPI backend
+
+- [x] `04-init-fastapi-backend.md` — FastAPI Backend
+  - Commits: `5017f03`, `770efd6`, `363a3df`, `12e4f2f`
+  - 8 API endpoints for rankings CRUD + profile management
+  - Ported utils from app/ to backend/, removed Streamlit deps
+  - All tests updated to import from backend/
+
 - [x] `03-init-war-room-core.md` — War Room in Streamlit
   - Commit: `dede688`
-  - 43 tests passing, 84% coverage
-  - All core features working: tiers, reorder, notes, add, delete, save
-  - Retired due to Streamlit UI limitations (CSS/layout constraints)
+  - Retired due to Streamlit UI limitations (ADR-006)
 
-- [x] `01-init-project-setup.md` — Project scaffold, data loader, Streamlit skeleton
+- [x] `01-init-project-setup.md` — Project scaffold, data loader
   - Commit: `6a5f313`
-  - 8 tests passing, 81% coverage on app/utils/
 
 ---
 
 ## Dropped / Descoped
 
 - ~~Streamlit UI~~ — **Retired** (2026-03-30)
-  - Reason: Streamlit cannot support the dense, interactive war room layout.
-    Background colors behind widgets, precise CSS control, and custom layouts
-    are not achievable within Streamlit's rendering model.
-  - All Python utility logic (data_loader, rankings, constants) is kept and
-    ported to backend/utils/. Tests unchanged.
-  - ADR-006 documents this decision.
+  - Replaced by FastAPI + React (ADR-006)
 
 - ~~`02-init-history-browser.md`~~ — **Dropped** (2026-03-30)
-  - Reason: App is rankings-only. Historical data is seed infrastructure.
+  - App is rankings-only. Historical data is seed infrastructure.
 
 ---
 
@@ -70,35 +74,32 @@ from utils.rankings import load_or_seed
 from backend.utils.constants import POSITIONS
 ```
 
-### What Is Kept from Streamlit Version
-- `backend/utils/data_loader.py` — unchanged, fully tested
-- `backend/utils/rankings.py` — unchanged, fully tested
-- `backend/utils/constants.py` — unchanged
-- `tests/` — all 43 tests carry over
-
-### What Is Scrapped
-- `app/main.py` — Streamlit entry point
-- `app/pages/` — all Streamlit pages
-- `app/components/` — Streamlit components
-- `.streamlit/config.toml` — Streamlit config
-- All Streamlit CSS injection
+### Profile Storage Model
+```
+data/rankings/
+  default.json       ← active profile (always present)
+  seed.json          ← custom reset baseline (optional)
+  {name}.json        ← named profiles created via Save As
+```
 
 ---
 
 ## Notes
 
-### Running the New Stack
+### Running the Stack
 ```bash
 # Backend
-cd ff-draft-room
 source .venv/bin/activate
-uvicorn backend.main:app --reload
-# → localhost:8000
+uvicorn backend.main:app --reload   # → localhost:8000
 
-# Frontend (separate terminal)
-cd frontend
-npm run dev
-# → localhost:5173
+# Frontend
+cd frontend && npm run dev          # → localhost:5173
+```
+
+### Tests
+```bash
+pytest tests/ --cov=backend         # 49 passing
+ruff check backend/ tests/          # zero errors
 ```
 
 ### CSV File Naming
@@ -113,9 +114,6 @@ data/players/TE_2020.csv  through  TE_2025.csv
 - 10 teams, half-PPR, standard roster
 - Positions: QB, RB, WR, TE (K and D/ST in Phase 1c)
 
-### Known Issues (Streamlit era — resolved by migration)
-- Python 3.9: `from __future__ import annotations` still required in backend utils
-
 ---
 
-*Last updated: 2026-03-30 (pivot to FastAPI + React)*
+*Last updated: 2026-03-31 (profile management complete)*
