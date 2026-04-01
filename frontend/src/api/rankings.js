@@ -38,3 +38,26 @@ export const updateNotes = (position, rank, notes) =>
 
 export const saveRankings = () =>
   request(`${BASE}/save`, { method: 'POST' })
+
+export const getProfiles = () =>
+  request(`${BASE}/profiles`)
+
+export const saveAs = (name) =>
+  request(`${BASE}/save-as`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })
+
+export const loadProfileApi = (name) =>
+  request(`${BASE}/load`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })
+
+export const resetRankings = () =>
+  request(`${BASE}/reset`, { method: 'POST' })
+
+export const setDefaultSeed = () =>
+  request(`${BASE}/set-default`, { method: 'POST' })

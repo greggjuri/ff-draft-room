@@ -2,24 +2,40 @@ import PositionColumn from './PositionColumn'
 import NotesDialog from './NotesDialog'
 import AddPlayerDialog from './AddPlayerDialog'
 import DeleteConfirmDialog from './DeleteConfirmDialog'
+import SaveAsDialog from './SaveAsDialog'
+import LoadDialog from './LoadDialog'
+import ResetConfirmDialog from './ResetConfirmDialog'
+import SetDefaultConfirmDialog from './SetDefaultConfirmDialog'
 import './WarRoom.css'
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE']
 
 export default function WarRoom({
-  rankings, dirty, onReorder, onSave,
+  rankings, dirty, profileName, onReorder, onSave,
+  onSaveAsOpen, onLoadOpen, onResetOpen, onSetDefaultOpen,
   notesDialog, onNotesOpen, onNotesClose, onNotesUpdate,
   addDialog, onAddOpen, onAddClose, onAdd,
   deleteDialog, onDeleteOpen, onDeleteClose, onDelete,
+  saveAsDialog, onSaveAs, onSaveAsClose,
+  loadDialog, onLoad, onLoadClose,
+  resetDialog, onReset, onResetClose,
+  setDefaultDialog, onSetDefault, onSetDefaultClose,
 }) {
   return (
     <div className="war-room">
       <header className="war-room-header">
         <div className="war-room-title">🏈 WAR ROOM</div>
+        <span className="profile-name">{profileName}</span>
         <div className="war-room-status">
           {dirty && <span className="unsaved-indicator">● UNSAVED</span>}
         </div>
-        <button className="save-button" onClick={onSave}>SAVE</button>
+        <div className="toolbar">
+          <button className="save-button" onClick={onSave}>SAVE</button>
+          <button className="toolbar-btn" onClick={onSaveAsOpen}>SAVE AS</button>
+          <button className="toolbar-btn" onClick={onLoadOpen}>LOAD</button>
+          <button className="toolbar-btn toolbar-btn-danger" onClick={onResetOpen}>RESET</button>
+          <button className="toolbar-btn" onClick={onSetDefaultOpen}>★ SET DEFAULT</button>
+        </div>
       </header>
 
       <div className="war-room-columns">
@@ -65,6 +81,31 @@ export default function WarRoom({
           onClose={onDeleteClose}
         />
       )}
+
+      <SaveAsDialog
+        isOpen={saveAsDialog}
+        onSave={onSaveAs}
+        onClose={onSaveAsClose}
+      />
+
+      <LoadDialog
+        isOpen={loadDialog}
+        dirty={dirty}
+        onLoad={onLoad}
+        onClose={onLoadClose}
+      />
+
+      <ResetConfirmDialog
+        isOpen={resetDialog}
+        onConfirm={onReset}
+        onClose={onResetClose}
+      />
+
+      <SetDefaultConfirmDialog
+        isOpen={setDefaultDialog}
+        onConfirm={onSetDefault}
+        onClose={onSetDefaultClose}
+      />
     </div>
   )
 }

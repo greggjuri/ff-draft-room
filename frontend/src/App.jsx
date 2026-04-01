@@ -7,33 +7,45 @@ import {
   deletePlayer,
   updateNotes,
   saveRankings,
+  saveAs,
+  loadProfileApi,
+  resetRankings,
+  setDefaultSeed,
 } from './api/rankings'
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE']
+
+function reloadAllPositions(setRankings) {
+  return Promise.all(
+    POSITIONS.map(pos =>
+      getPositionPlayers(pos).then(players => [pos, players])
+    )
+  ).then(results => {
+    setRankings(Object.fromEntries(results))
+  })
+}
 
 export default function App() {
   const [rankings, setRankings] = useState({ QB: [], RB: [], WR: [], TE: [] })
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [profileName, setProfileName] = useState('2026 Draft')
 
   // Dialog state
   const [notesDialog, setNotesDialog] = useState(null)
   const [addDialog, setAddDialog] = useState(null)
   const [deleteDialog, setDeleteDialog] = useState(null)
+  const [saveAsDialog, setSaveAsDialog] = useState(false)
+  const [loadDialog, setLoadDialog] = useState(false)
+  const [resetDialog, setResetDialog] = useState(false)
+  const [setDefaultDialog, setSetDefaultDialog] = useState(false)
 
   // Load all positions on mount
   useEffect(() => {
-    Promise.all(
-      POSITIONS.map(pos =>
-        getPositionPlayers(pos).then(players => [pos, players])
-      )
-    )
-      .then(results => {
-        setRankings(Object.fromEntries(results))
-        setLoading(false)
-      })
-      .catch(err => {
+    reloadAllPositions(setRankings)
+      .then(() => setLoading(false))
+      .catch(() => {
         setError('Cannot connect to backend at localhost:8000')
         setLoading(false)
       })
@@ -70,7 +82,6 @@ export default function App() {
   const handleNotesUpdate = async (position, rank, notes) => {
     try {
       await updateNotes(position, rank, notes)
-      // Refresh position to get updated player
       const updated = await getPositionPlayers(position)
       setRankings(prev => ({ ...prev, [position]: updated }))
       setDirty(true)
@@ -84,6 +95,46 @@ export default function App() {
     try {
       await saveRankings()
       setDirty(false)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const handleSaveAs = async (name) => {
+    const result = await saveAs(name)
+    setProfileName(result.name)
+    setDirty(false)
+    setSaveAsDialog(false)
+  }
+
+  const handleLoad = async (name) => {
+    try {
+      const profile = await loadProfileApi(name)
+      setProfileName(profile.name || name)
+      await reloadAllPositions(setRankings)
+      setDirty(false)
+      setLoadDialog(false)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const handleReset = async () => {
+    try {
+      await resetRankings()
+      await reloadAllPositions(setRankings)
+      setProfileName('2026 Draft')
+      setDirty(false)
+      setResetDialog(false)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const handleSetDefault = async () => {
+    try {
+      await setDefaultSeed()
+      setSetDefaultDialog(false)
     } catch (err) {
       setError(err.message)
     }
@@ -107,8 +158,13 @@ export default function App() {
       <WarRoom
         rankings={rankings}
         dirty={dirty}
+        profileName={profileName}
         onReorder={handleReorder}
         onSave={handleSave}
+        onSaveAsOpen={() => setSaveAsDialog(true)}
+        onLoadOpen={() => setLoadDialog(true)}
+        onResetOpen={() => setResetDialog(true)}
+        onSetDefaultOpen={() => setSetDefaultDialog(true)}
         notesDialog={notesDialog}
         onNotesOpen={(player, position) => setNotesDialog({ player, position })}
         onNotesClose={() => setNotesDialog(null)}
@@ -121,6 +177,18 @@ export default function App() {
         onDeleteOpen={(player, position) => setDeleteDialog({ player, position })}
         onDeleteClose={() => setDeleteDialog(null)}
         onDelete={handleDelete}
+        saveAsDialog={saveAsDialog}
+        onSaveAs={handleSaveAs}
+        onSaveAsClose={() => setSaveAsDialog(false)}
+        loadDialog={loadDialog}
+        onLoad={handleLoad}
+        onLoadClose={() => setLoadDialog(false)}
+        resetDialog={resetDialog}
+        onReset={handleReset}
+        onResetClose={() => setResetDialog(false)}
+        setDefaultDialog={setDefaultDialog}
+        onSetDefault={handleSetDefault}
+        onSetDefaultClose={() => setSetDefaultDialog(false)}
       />
     </>
   )

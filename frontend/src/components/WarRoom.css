@@ -1,7 +1,7 @@
 .war-room-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 24px;
@@ -34,6 +34,46 @@
 .save-button:hover {
   background: var(--accent);
   color: white;
+}
+
+.profile-name {
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.war-room-status {
+  flex: 1;
+}
+
+.toolbar {
+  display: flex;
+  gap: 6px;
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 12px;
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.toolbar-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toolbar-btn-danger {
+  border-color: #8B2020;
+  color: #8B2020;
+}
+.toolbar-btn-danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .war-room-columns {
