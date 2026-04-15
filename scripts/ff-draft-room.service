@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=ec2-user
-WorkingDirectory=/home/ec2-user/ff-draft-room
-EnvironmentFile=/home/ec2-user/ff-draft-room/.env.production
-ExecStart=/home/ec2-user/ff-draft-room/.venv/bin/uvicorn \
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ff-draft-room
+EnvironmentFile=/home/ubuntu/ff-draft-room/.env.production
+ExecStart=/home/ubuntu/ff-draft-room/.venv/bin/uvicorn \
     backend.main:app \
     --host 127.0.0.1 \
     --port 8000 \

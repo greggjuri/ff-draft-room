@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO_DIR="/home/ec2-user/ff-draft-room"
+REPO_DIR="/home/ubuntu/ff-draft-room"
 DIST_DIR="/var/www/ff-draft-room/dist"
 NGINX_CONF="/etc/nginx/sites-available/ff-draft-room"
 NGINX_ENABLED="/etc/nginx/sites-enabled/ff-draft-room"
