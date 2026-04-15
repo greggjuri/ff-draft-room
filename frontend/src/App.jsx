@@ -143,11 +143,24 @@ function AppContent() {
   }
 
   const handleTierMove = async (position, rank, newTier) => {
+    // Optimistic update so subsequent snaps in the same drag gesture
+    // see the correct tier values before the API responds
+    setRankings(prev => ({
+      ...prev,
+      [position]: prev[position].map(p =>
+        p.position_rank === rank ? { ...p, tier: newTier } : p
+      ),
+    }))
+    setDirty(true)
     try {
       const updated = await setPlayerTier(position, rank, newTier)
       setRankings(prev => ({ ...prev, [position]: updated }))
-      setDirty(true)
     } catch (err) {
+      // Revert optimistic update by reloading from server
+      try {
+        const reverted = await getPositionPlayers(position)
+        setRankings(prev => ({ ...prev, [position]: reverted }))
+      } catch { /* already showing error */ }
       setError(err.message)
     }
   }
