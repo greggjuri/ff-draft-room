@@ -1,7 +1,20 @@
+import { getToken } from '../auth/cognito'
+
 const BASE = '/api/rankings'
 
+async function authHeaders() {
+  const token = await getToken()
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+
 async function request(url, options = {}) {
-  const res = await fetch(url, options)
+  const headers = await authHeaders()
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...headers, ...options.headers },
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail || `Request failed: ${res.status}`)
@@ -15,14 +28,12 @@ export const getPositionPlayers = (position) =>
 export const reorderPlayers = (position, rank_a, rank_b) =>
   request(`${BASE}/${position}/reorder`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rank_a, rank_b })
   })
 
 export const addPlayer = (position, name, team, tier) =>
   request(`${BASE}/${position}/add`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, team, tier })
   })
 
@@ -32,7 +43,6 @@ export const deletePlayer = (position, rank) =>
 export const updateNotes = (position, rank, notes) =>
   request(`${BASE}/${position}/${rank}/notes`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ notes })
   })
 
@@ -45,14 +55,12 @@ export const getProfiles = () =>
 export const saveAs = (name) =>
   request(`${BASE}/save-as`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   })
 
 export const loadProfileApi = (name) =>
   request(`${BASE}/load`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   })
 

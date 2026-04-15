@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from utils.constants import POSITIONS
@@ -25,18 +25,23 @@ from utils.rankings import (
 router = APIRouter(prefix="/rankings", redirect_slashes=False)
 
 # ---------------------------------------------------------------------------
-# Module-level state — single-user local app
+# Module-level state — single-user app
 # ---------------------------------------------------------------------------
 
 _profile: dict | None = None
 
 
-def get_profile() -> dict:
+def _get_storage(request: Request):
+    """Get storage backend from app state."""
+    return request.app.state.storage
+
+
+def get_profile(request: Request) -> dict:
     """Lazy-load the rankings profile on first access."""
     global _profile
     if _profile is None:
         df = load_all_players()
-        _profile = load_or_seed(df)
+        _profile = load_or_seed(df, storage=_get_storage(request))
     return _profile
 
 
@@ -49,7 +54,9 @@ def _set_profile(profile: dict) -> None:
 def _validate_position(position: str) -> None:
     """Raise 404 if position is not valid."""
     if position not in POSITIONS:
-        raise HTTPException(status_code=404, detail=f"Invalid position: {position}")
+        raise HTTPException(
+            status_code=404, detail=f"Invalid position: {position}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -87,23 +94,23 @@ class LoadRequest(BaseModel):
 
 @router.get("")
 @router.get("/")
-def get_rankings() -> dict:
+def get_rankings(request: Request) -> dict:
     """Return full rankings profile."""
-    return get_profile()
+    return get_profile(request)
 
 
 @router.post("/save")
-def save() -> dict:
+def save(request: Request) -> dict:
     """Save current in-memory profile to disk."""
-    profile = get_profile()
-    success = save_rankings(profile)
+    profile = get_profile(request)
+    success = save_rankings(profile, storage=_get_storage(request))
     if not success:
         raise HTTPException(status_code=500, detail="Save failed")
     return {"saved": True}
 
 
 @router.post("/seed")
-def seed() -> dict:
+def seed(request: Request) -> dict:
     """Re-seed rankings from CSV data (nuclear reset)."""
     df = load_all_players()
     if df.empty:
@@ -111,33 +118,38 @@ def seed() -> dict:
             status_code=500, detail="No 2025 data found in data/players/"
         )
     profile = seed_rankings(df)
-    save_rankings(profile)
+    save_rankings(profile, storage=_get_storage(request))
     _set_profile(profile)
     return profile
 
 
 @router.get("/profiles")
-def get_profiles() -> list[str]:
+def get_profiles(request: Request) -> list[str]:
     """Return list of saved profile names (excludes default and seed)."""
-    return list_profiles()
+    return list_profiles(storage=_get_storage(request))
 
 
 @router.post("/save-as")
-def save_as(body: SaveAsRequest) -> dict:
+def save_as(request: Request, body: SaveAsRequest) -> dict:
     """Save current profile under a new name."""
     try:
-        result = save_profile_as(get_profile(), body.name)
+        result = save_profile_as(
+            get_profile(request), body.name,
+            storage=_get_storage(request),
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    _set_profile(get_profile())  # name field was updated in-place
+    _set_profile(get_profile(request))  # name field was updated in-place
     return result
 
 
 @router.post("/load")
-def load(body: LoadRequest) -> dict:
+def load(request: Request, body: LoadRequest) -> dict:
     """Load a named profile as the active profile."""
     try:
-        profile = load_profile(body.name)
+        profile = load_profile(
+            body.name, storage=_get_storage(request)
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
@@ -147,40 +159,46 @@ def load(body: LoadRequest) -> dict:
 
 
 @router.post("/set-default")
-def set_default() -> dict:
+def set_default(request: Request) -> dict:
     """Save current profile as seed.json baseline for future resets."""
-    success = save_seed(get_profile())
+    success = save_seed(
+        get_profile(request), storage=_get_storage(request)
+    )
     if not success:
-        raise HTTPException(status_code=500, detail="Failed to save baseline")
+        raise HTTPException(
+            status_code=500, detail="Failed to save baseline"
+        )
     return {"saved": True}
 
 
 @router.post("/reset")
-def reset() -> dict:
+def reset(request: Request) -> dict:
     """Reset rankings to seed.json baseline or CSV data."""
     df = load_all_players()
-    profile = load_seed_or_csv(df)
+    profile = load_seed_or_csv(df, storage=_get_storage(request))
     if not profile.get("players"):
         raise HTTPException(
             status_code=500, detail="Reset failed: no data available"
         )
-    save_rankings(profile)
+    save_rankings(profile, storage=_get_storage(request))
     _set_profile(profile)
     return profile
 
 
 @router.get("/{position}")
-def get_position(position: str) -> list[dict]:
+def get_position(request: Request, position: str) -> list[dict]:
     """Return players for a position sorted by position_rank."""
     _validate_position(position)
-    return get_position_players(get_profile(), position)
+    return get_position_players(get_profile(request), position)
 
 
 @router.post("/{position}/reorder")
-def reorder(position: str, body: ReorderRequest) -> list[dict]:
+def reorder(
+    request: Request, position: str, body: ReorderRequest
+) -> list[dict]:
     """Swap two players by position_rank."""
     _validate_position(position)
-    profile = get_profile()
+    profile = get_profile(request)
 
     # Validate ranks exist
     players = get_position_players(profile, position)
@@ -198,7 +216,9 @@ def reorder(position: str, body: ReorderRequest) -> list[dict]:
 
 
 @router.post("/{position}/add")
-def add(position: str, body: AddPlayerRequest) -> list[dict]:
+def add(
+    request: Request, position: str, body: AddPlayerRequest
+) -> list[dict]:
     """Add a new player at the end of the specified tier."""
     _validate_position(position)
 
@@ -208,7 +228,7 @@ def add(position: str, body: AddPlayerRequest) -> list[dict]:
         )
 
     # Duplicate check (case-insensitive)
-    profile = get_profile()
+    profile = get_profile(request)
     existing = get_position_players(profile, position)
     if any(p["name"].lower() == body.name.strip().lower() for p in existing):
         raise HTTPException(
@@ -217,17 +237,18 @@ def add(position: str, body: AddPlayerRequest) -> list[dict]:
         )
 
     updated = add_player(
-        profile, body.name.strip(), body.team.strip().upper(), position, body.tier
+        profile, body.name.strip(), body.team.strip().upper(),
+        position, body.tier,
     )
     _set_profile(updated)
     return get_position_players(updated, position)
 
 
 @router.delete("/{position}/{rank}")
-def delete(position: str, rank: int) -> list[dict]:
+def delete(request: Request, position: str, rank: int) -> list[dict]:
     """Delete a player at the given rank."""
     _validate_position(position)
-    profile = get_profile()
+    profile = get_profile(request)
 
     # Validate rank exists
     players = get_position_players(profile, position)
@@ -243,10 +264,12 @@ def delete(position: str, rank: int) -> list[dict]:
 
 
 @router.put("/{position}/{rank}/notes")
-def update_notes(position: str, rank: int, body: NotesRequest) -> dict:
+def update_notes(
+    request: Request, position: str, rank: int, body: NotesRequest
+) -> dict:
     """Update notes for a player at the given rank."""
     _validate_position(position)
-    profile = get_profile()
+    profile = get_profile(request)
 
     # Find the player
     for p in profile["players"]:

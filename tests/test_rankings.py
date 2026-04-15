@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import json
 
 import pandas as pd
 import pytest
@@ -18,6 +17,7 @@ from utils.rankings import (
     seed_rankings,
     swap_players,
 )
+from utils.storage import LocalStorage
 
 
 # ---------------------------------------------------------------------------
@@ -154,10 +154,10 @@ def test_seed_notes_empty(sample_df):
 
 
 def test_load_or_seed_creates_file(sample_df, tmp_path):
-    json_path = tmp_path / "default.json"
-    assert not json_path.exists()
-    profile = load_or_seed(sample_df, rankings_dir=tmp_path)
-    assert json_path.exists()
+    store = LocalStorage(tmp_path)
+    assert not store.exists("default.json")
+    profile = load_or_seed(sample_df, storage=store)
+    assert store.exists("default.json")
     assert len(profile["players"]) > 0
 
 
@@ -166,28 +166,31 @@ def test_load_or_seed_loads_existing(tmp_path):
         "name": "Existing",
         "players": [{"position_rank": 1, "name": "X", "team": "Y", "position": "QB", "tier": 1, "notes": ""}],
     }
-    (tmp_path / "default.json").write_text(json.dumps(existing))
+    store = LocalStorage(tmp_path)
+    store.write("default.json", existing)
     df = pd.DataFrame()  # should not matter — existing file used
-    profile = load_or_seed(df, rankings_dir=tmp_path)
+    profile = load_or_seed(df, storage=store)
     assert profile["name"] == "Existing"
     assert len(profile["players"]) == 1
 
 
 def test_save_writes_valid_json(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = {
         "name": "Test",
         "players": [{"position_rank": 1, "name": "A", "team": "B", "position": "QB", "tier": 1, "notes": ""}],
     }
-    assert save_rankings(profile, rankings_dir=tmp_path)
-    data = json.loads((tmp_path / "default.json").read_text())
+    assert save_rankings(profile, storage=store)
+    data = store.read("default.json")
     assert "players" in data
     assert len(data["players"]) == 1
 
 
 def test_save_updates_modified_timestamp(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = {"name": "Test", "modified": "2020-01-01T00:00:00", "players": []}
-    save_rankings(profile, rankings_dir=tmp_path)
-    data = json.loads((tmp_path / "default.json").read_text())
+    save_rankings(profile, storage=store)
+    data = store.read("default.json")
     assert data["modified"] != "2020-01-01T00:00:00"
 
 
@@ -196,7 +199,9 @@ def test_save_returns_false_on_bad_path(tmp_path):
     bad_dir = tmp_path / "no" / "such" / "deeply" / "nested"
     # Make a file where a directory is expected so mkdir fails
     (tmp_path / "no").write_text("block")
-    result = save_rankings(profile, rankings_dir=bad_dir)
+    store = LocalStorage.__new__(LocalStorage)
+    store.base_dir = bad_dir
+    result = save_rankings(profile, storage=store)
     assert result is False
 
 

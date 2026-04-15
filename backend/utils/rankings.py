@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 from utils.constants import POSITIONS
+from utils.storage import LocalStorage, StorageBackend
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,11 @@ TIER_BREAKPOINTS: dict[str, list[tuple[int, int]]] = {
     "WR": [(4, 1), (8, 2), (16, 3), (24, 4), (36, 5), (50, 6)],
     "TE": [(3, 1), (6, 2), (10, 3), (14, 4), (18, 5), (24, 6), (30, 7)],
 }
+
+
+def _default_storage() -> StorageBackend:
+    """Create default LocalStorage for backward compatibility."""
+    return LocalStorage(RANKINGS_DIR)
 
 
 def _assign_tier(position: str, rank: int) -> int:
@@ -82,53 +87,47 @@ def seed_rankings(df: pd.DataFrame) -> dict:
     }
 
 
-def load_or_seed(df: pd.DataFrame, rankings_dir: Path | None = None) -> dict:
+def load_or_seed(
+    df: pd.DataFrame, storage: StorageBackend | None = None
+) -> dict:
     """Load existing profile or seed from CSV data.
 
     If default.json exists and is valid, load it.
     If missing or corrupted, seed from data and save.
     """
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
+    if storage is None:
+        storage = _default_storage()
 
-    path = rankings_dir / "default.json"
+    profile = storage.read("default.json")
+    if profile is not None and "players" in profile:
+        return profile
 
-    if path.exists():
-        try:
-            with open(path) as f:
-                profile = json.load(f)
-            if "players" in profile:
-                return profile
-        except (json.JSONDecodeError, KeyError):
-            logger.warning("Rankings corrupted — re-seeding.")
+    if profile is not None:
+        logger.warning("Rankings corrupted — re-seeding.")
 
     # Seed and save
     profile = seed_rankings(df)
-    rankings_dir.mkdir(parents=True, exist_ok=True)
-    save_rankings(profile, rankings_dir=rankings_dir)
+    save_rankings(profile, storage=storage)
     return profile
 
 
 def save_rankings(
-    profile: dict, rankings_dir: Path | None = None
+    profile: dict, storage: StorageBackend | None = None
 ) -> bool:
-    """Write profile to data/rankings/default.json.
+    """Write profile to default.json.
 
     Updates modified timestamp before writing.
     Returns True on success, False on failure. Never raises.
     """
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
+    if storage is None:
+        storage = _default_storage()
 
     profile["modified"] = datetime.now(timezone.utc).isoformat()
-    path = rankings_dir / "default.json"
 
     try:
-        rankings_dir.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(profile, f, indent=2)
+        storage.write("default.json", profile)
         return True
-    except IOError:
+    except (IOError, OSError):
         return False
 
 
@@ -291,88 +290,82 @@ def _sanitize_name(name: str) -> str:
     return name.replace(" ", "_")
 
 
-def list_profiles(rankings_dir: Path | None = None) -> list[str]:
+def list_profiles(storage: StorageBackend | None = None) -> list[str]:
     """Return sorted list of profile display names.
 
     Excludes default.json and seed.json.
     """
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
-    if not rankings_dir.exists():
-        return []
+    if storage is None:
+        storage = _default_storage()
     names = []
-    for f in sorted(rankings_dir.glob("*.json")):
-        stem = f.stem
+    for key in sorted(storage.list_keys()):
+        stem = key.removesuffix(".json")
         if stem.lower() not in RESERVED_NAMES:
             names.append(stem.replace("_", " "))
     return names
 
 
 def save_profile_as(
-    profile: dict, name: str, rankings_dir: Path | None = None
+    profile: dict, name: str, storage: StorageBackend | None = None
 ) -> dict:
     """Save profile under a named file.
 
     Returns dict with saved status, display name, and filename.
     Raises ValueError on invalid name.
     """
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
+    if storage is None:
+        storage = _default_storage()
     sanitized = _sanitize_name(name)
     filename = f"{sanitized}.json"
     profile["name"] = name.strip()
-    rankings_dir.mkdir(parents=True, exist_ok=True)
-    with open(rankings_dir / filename, "w") as f:
-        json.dump(profile, f, indent=2)
+    storage.write(filename, profile)
     return {"saved": True, "name": name.strip(), "filename": filename}
 
 
-def load_profile(name: str, rankings_dir: Path | None = None) -> dict:
-    """Load a named profile from disk.
+def load_profile(
+    name: str, storage: StorageBackend | None = None
+) -> dict:
+    """Load a named profile from storage.
 
     Also copies to default.json so it becomes the active profile.
     Raises ValueError on reserved names, FileNotFoundError if missing.
     """
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
+    if storage is None:
+        storage = _default_storage()
     if name.strip().lower() in RESERVED_NAMES:
         raise ValueError(f"'{name}' is a reserved name")
     sanitized = name.strip().replace(" ", "_")
-    path = rankings_dir / f"{sanitized}.json"
-    if not path.exists():
+    filename = f"{sanitized}.json"
+    profile = storage.read(filename)
+    if profile is None:
         raise FileNotFoundError(f"Profile not found: {name}")
-    with open(path) as f:
-        profile = json.load(f)
     # Copy to default.json so it's loaded on next startup
-    with open(rankings_dir / "default.json", "w") as f:
-        json.dump(profile, f, indent=2)
+    storage.write("default.json", profile)
     return profile
 
 
-def save_seed(profile: dict, rankings_dir: Path | None = None) -> bool:
+def save_seed(
+    profile: dict, storage: StorageBackend | None = None
+) -> bool:
     """Save current profile as seed.json baseline for future resets."""
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
+    if storage is None:
+        storage = _default_storage()
     try:
-        rankings_dir.mkdir(parents=True, exist_ok=True)
-        with open(rankings_dir / "seed.json", "w") as f:
-            json.dump(profile, f, indent=2)
+        storage.write("seed.json", profile)
         return True
-    except IOError:
+    except (IOError, OSError):
         return False
 
 
 def load_seed_or_csv(
-    df: pd.DataFrame, rankings_dir: Path | None = None
+    df: pd.DataFrame, storage: StorageBackend | None = None
 ) -> dict:
     """Load seed.json if it exists, otherwise seed from CSV data."""
-    if rankings_dir is None:
-        rankings_dir = RANKINGS_DIR
-    seed_path = rankings_dir / "seed.json"
-    if seed_path.exists():
-        try:
-            with open(seed_path) as f:
-                return json.load(f)
-        except (json.JSONDecodeError, KeyError):
-            logger.warning("seed.json corrupted — falling back to CSV seed.")
+    if storage is None:
+        storage = _default_storage()
+    if storage.exists("seed.json"):
+        profile = storage.read("seed.json")
+        if profile is not None:
+            return profile
+        logger.warning("seed.json corrupted — falling back to CSV seed.")
     return seed_rankings(df)

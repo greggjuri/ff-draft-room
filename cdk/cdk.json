@@ -1,0 +1,6 @@
+{
+  "app": "python app.py",
+  "context": {
+    "ec2InstanceId": "i-04c64860b83289813"
+  }
+}

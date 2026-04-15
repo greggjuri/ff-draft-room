@@ -24,6 +24,16 @@ wheels/
 *.egg
 MANIFEST
 
+# Production env (on EC2, not in repo)
+/.env.production
+
+# CDK outputs
+cdk/cdk-outputs.json
+cdk/cdk.out/
+
+# Frontend local env (dev overrides)
+frontend/.env.local
+
 # Virtual environments
 .env
 .venv

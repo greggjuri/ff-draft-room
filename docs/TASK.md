@@ -1,6 +1,6 @@
 # FF Draft Room - Task Tracker
 
-## Current Sprint: Phase 1c — Polish
+## Current Sprint: Phase 1d — Polish
 
 ### In Progress
 _None_
@@ -9,8 +9,7 @@ _None_
 
 ## Backlog
 
-### Phase 1c — Polish
-- [ ] `09-init-k-dst.md` — Add K and D/ST columns
+### Phase 1d — Polish
 - [ ] Export rankings to CSV
 - [ ] Rename / delete saved profiles
 
@@ -22,6 +21,15 @@ _None_
 ---
 
 ## Recently Completed
+
+- [x] `09-init-aws-deploy.md` — AWS Deployment
+  - S3 StorageBackend abstraction (LocalStorage + S3Storage)
+  - Cognito JWT auth middleware (conditional — prod only)
+  - Frontend auth: LoginPage + AuthContext + token headers
+  - CDK stack: S3 bucket + IAM role + instance profile
+  - Deploy scripts: deploy.sh, cdk-bootstrap.sh, nginx, systemd
+  - 15 new storage tests (64 total passing)
+  - ADR-007 (EC2 + nginx), ADR-008 (S3 Storage Backend)
 
 - [x] `08-init-search.md` — Global Player Search
   - Commit: `f7d3743`
@@ -72,6 +80,9 @@ _None_
 - ~~`02-init-history-browser.md`~~ — **Dropped** (2026-03-30)
   - App is rankings-only. Historical data is seed infrastructure.
 
+- ~~K and D/ST columns~~ — **Dropped** (2026-04-14)
+  - Not needed — handled separately during drafts
+
 ---
 
 ## Architecture Decisions
@@ -82,6 +93,7 @@ All backend Python imports are relative to `backend/`:
 # CORRECT
 from utils.constants import POSITIONS
 from utils.rankings import load_or_seed
+from utils.storage import get_storage
 
 # WRONG
 from backend.utils.constants import POSITIONS
@@ -89,11 +101,12 @@ from backend.utils.constants import POSITIONS
 
 ### Profile Storage Model
 ```
-data/rankings/
-  default.json       ← active profile (always present)
-  seed.json          ← custom reset baseline (optional)
-  {name}.json        ← named profiles created via Save As
+default.json       ← active profile (always present)
+seed.json          ← custom reset baseline (optional)
+{name}.json        ← named profiles created via Save As
 ```
+In local dev: files in `data/rankings/`
+In production: S3 objects under `rankings/` prefix
 
 ---
 
@@ -109,9 +122,16 @@ uvicorn backend.main:app --reload   # → localhost:8000
 cd frontend && npm run dev          # → localhost:5173
 ```
 
+### Production Deploy
+```bash
+# On EC2
+git pull origin main
+./scripts/deploy.sh
+```
+
 ### Tests
 ```bash
-pytest tests/ --cov=backend         # 49 passing
+pytest tests/ --cov=backend         # 64 passing
 ruff check backend/ tests/          # zero errors
 ```
 
@@ -125,8 +145,8 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ### League Defaults
 - 10 teams, half-PPR, standard roster
-- Positions: QB, RB, WR, TE (K and D/ST in Phase 1c)
+- Positions: QB, RB, WR, TE
 
 ---
 
-*Last updated: 2026-03-31 (draft mode + search complete)*
+*Last updated: 2026-04-14 (AWS deployment complete)*

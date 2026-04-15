@@ -1,0 +1,19 @@
+[Unit]
+Description=FF Draft Room FastAPI Backend
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/ff-draft-room
+EnvironmentFile=/home/ec2-user/ff-draft-room/.env.production
+ExecStart=/home/ec2-user/ff-draft-room/.venv/bin/uvicorn \
+    backend.main:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

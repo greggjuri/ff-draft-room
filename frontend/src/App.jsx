@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
+import { AuthProvider, useAuth } from './auth/AuthContext'
+import LoginPage from './components/LoginPage'
 import WarRoom from './components/WarRoom'
 import {
   getPositionPlayers,
@@ -26,6 +28,15 @@ function reloadAllPositions(setRankings) {
 }
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}
+
+function AppContent() {
+  const { isAuthenticated, loading: authLoading, logout } = useAuth()
   const [rankings, setRankings] = useState({ QB: [], RB: [], WR: [], TE: [] })
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -209,6 +220,8 @@ export default function App() {
     }
   }
 
+  if (authLoading) return <div className="loading">LOADING...</div>
+  if (!isAuthenticated) return <LoginPage />
   if (loading) return <div className="loading">LOADING...</div>
 
   return (

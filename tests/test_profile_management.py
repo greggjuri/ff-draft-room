@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 import pandas as pd
 import pytest
 
@@ -14,6 +12,7 @@ from utils.rankings import (
     save_profile_as,
     save_seed,
 )
+from utils.storage import LocalStorage
 
 
 def _sample_profile(name: str = "Test") -> dict:
@@ -43,22 +42,25 @@ def _sample_df() -> pd.DataFrame:
 
 
 def test_get_profiles_empty(tmp_path):
-    assert list_profiles(rankings_dir=tmp_path) == []
+    store = LocalStorage(tmp_path)
+    assert list_profiles(storage=store) == []
 
 
 def test_get_profiles_lists_files(tmp_path):
-    (tmp_path / "Mock_Draft_1.json").write_text("{}")
-    (tmp_path / "Final_Board.json").write_text("{}")
-    result = list_profiles(rankings_dir=tmp_path)
+    store = LocalStorage(tmp_path)
+    store.write("Mock_Draft_1.json", {})
+    store.write("Final_Board.json", {})
+    result = list_profiles(storage=store)
     assert "Final Board" in result
     assert "Mock Draft 1" in result
 
 
 def test_get_profiles_excludes_reserved(tmp_path):
-    (tmp_path / "default.json").write_text("{}")
-    (tmp_path / "seed.json").write_text("{}")
-    (tmp_path / "My_Board.json").write_text("{}")
-    result = list_profiles(rankings_dir=tmp_path)
+    store = LocalStorage(tmp_path)
+    store.write("default.json", {})
+    store.write("seed.json", {})
+    store.write("My_Board.json", {})
+    result = list_profiles(storage=store)
     assert result == ["My Board"]
 
 
@@ -68,28 +70,32 @@ def test_get_profiles_excludes_reserved(tmp_path):
 
 
 def test_save_as_creates_file(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = _sample_profile()
-    result = save_profile_as(profile, "Mock Draft 1", rankings_dir=tmp_path)
+    result = save_profile_as(profile, "Mock Draft 1", storage=store)
     assert result["saved"] is True
     assert result["filename"] == "Mock_Draft_1.json"
-    assert (tmp_path / "Mock_Draft_1.json").exists()
+    assert store.exists("Mock_Draft_1.json")
 
 
 def test_save_as_sanitizes_name(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = _sample_profile()
-    result = save_profile_as(profile, "  My Board  ", rankings_dir=tmp_path)
+    result = save_profile_as(profile, "  My Board  ", storage=store)
     assert result["filename"] == "My_Board.json"
     assert result["name"] == "My Board"
 
 
 def test_save_as_rejects_empty_name(tmp_path):
+    store = LocalStorage(tmp_path)
     with pytest.raises(ValueError, match="required"):
-        save_profile_as(_sample_profile(), "", rankings_dir=tmp_path)
+        save_profile_as(_sample_profile(), "", storage=store)
 
 
 def test_save_as_rejects_path_traversal(tmp_path):
+    store = LocalStorage(tmp_path)
     with pytest.raises(ValueError, match="Invalid"):
-        save_profile_as(_sample_profile(), "../evil", rankings_dir=tmp_path)
+        save_profile_as(_sample_profile(), "../evil", storage=store)
 
 
 # ---------------------------------------------------------------------------
@@ -98,32 +104,34 @@ def test_save_as_rejects_path_traversal(tmp_path):
 
 
 def test_load_profile_loads_file(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = _sample_profile("Loaded")
-    (tmp_path / "My_Board.json").write_text(json.dumps(profile))
-    # Also need default.json to exist for the copy
-    (tmp_path / "default.json").write_text("{}")
-    loaded = load_profile("My Board", rankings_dir=tmp_path)
+    store.write("My_Board.json", profile)
+    loaded = load_profile("My Board", storage=store)
     assert loaded["name"] == "Loaded"
 
 
 def test_load_profile_copies_to_default(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = _sample_profile("Loaded")
-    (tmp_path / "My_Board.json").write_text(json.dumps(profile))
-    load_profile("My Board", rankings_dir=tmp_path)
-    default = json.loads((tmp_path / "default.json").read_text())
+    store.write("My_Board.json", profile)
+    load_profile("My Board", storage=store)
+    default = store.read("default.json")
     assert default["name"] == "Loaded"
 
 
 def test_load_profile_404_if_missing(tmp_path):
+    store = LocalStorage(tmp_path)
     with pytest.raises(FileNotFoundError):
-        load_profile("Nonexistent", rankings_dir=tmp_path)
+        load_profile("Nonexistent", storage=store)
 
 
 def test_load_rejects_reserved_names(tmp_path):
+    store = LocalStorage(tmp_path)
     with pytest.raises(ValueError, match="reserved"):
-        load_profile("default", rankings_dir=tmp_path)
+        load_profile("default", storage=store)
     with pytest.raises(ValueError, match="reserved"):
-        load_profile("seed", rankings_dir=tmp_path)
+        load_profile("seed", storage=store)
 
 
 # ---------------------------------------------------------------------------
@@ -132,23 +140,26 @@ def test_load_rejects_reserved_names(tmp_path):
 
 
 def test_set_default_writes_seed_json(tmp_path):
+    store = LocalStorage(tmp_path)
     profile = _sample_profile()
-    assert save_seed(profile, rankings_dir=tmp_path)
-    assert (tmp_path / "seed.json").exists()
-    data = json.loads((tmp_path / "seed.json").read_text())
+    assert save_seed(profile, storage=store)
+    assert store.exists("seed.json")
+    data = store.read("seed.json")
     assert data["name"] == "Test"
 
 
 def test_reset_uses_seed_json_if_exists(tmp_path):
+    store = LocalStorage(tmp_path)
     seed = _sample_profile("Seed Baseline")
-    (tmp_path / "seed.json").write_text(json.dumps(seed))
-    result = load_seed_or_csv(pd.DataFrame(), rankings_dir=tmp_path)
+    store.write("seed.json", seed)
+    result = load_seed_or_csv(pd.DataFrame(), storage=store)
     assert result["name"] == "Seed Baseline"
 
 
 def test_reset_falls_back_to_csv(tmp_path):
+    store = LocalStorage(tmp_path)
     # No seed.json — should fall back to seed_rankings
     df = _sample_df()
-    result = load_seed_or_csv(df, rankings_dir=tmp_path)
+    result = load_seed_or_csv(df, storage=store)
     assert len(result["players"]) > 0
     assert result["name"] == "2026 Draft"

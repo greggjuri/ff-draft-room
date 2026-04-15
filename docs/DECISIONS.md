@@ -17,18 +17,20 @@ See ADR-006.
 ## ADR-002: JSON Files for Rankings Persistence
 
 **Date**: 2026-03-22
-**Status**: Accepted
+**Status**: Accepted — extended by ADR-008
 
 ### Decision
-Use JSON files in `data/rankings/` for all ranking profiles.
+Use JSON files for all ranking profiles.
 
 ### Rationale
 - Human-readable, no setup, portable, easy to back up
 - Profiles are small (< 200 players, ~50KB max)
 
 ### Consequences
-- Zero setup, works out of the box
+- Zero setup, works out of the box locally
 - No query capability — load entire profile into memory (acceptable)
+- Extended by ADR-008 to support S3 as the production storage backend
+  while preserving local JSON behaviour for development
 
 ---
 
@@ -141,6 +143,93 @@ Retire Streamlit entirely. Migrate to:
 
 ---
 
+## ADR-007: Deploy to AWS via EC2 + nginx + systemd
+
+**Date**: 2026-04-14
+**Status**: Accepted
+
+### Context
+App is feature-complete for War Room and Draft Mode. Publishing to AWS
+enables access from any device — specifically mobile on draft day —
+without needing a running MacBook.
+
+### Decision
+Deploy to existing EC2 t3.micro instance behind nginx. Serve Vite `dist/`
+as static files. Reverse-proxy `/api/*` to uvicorn on port 8000. Manage
+the uvicorn process with systemd. Use Cognito for authentication.
+All infrastructure defined in CDK.
+
+### Rationale
+- EC2 already running 24/7 — no new infrastructure cost
+- nginx + systemd is simple, debuggable, proven pattern
+- No containerisation overhead for a single-user personal tool
+- CDK ensures everything is reproducible — no manual console steps
+
+### Alternatives Considered
+| Option | Verdict |
+|--------|---------|
+| ECS Fargate | Rejected — over-engineered for single-user tool |
+| App Runner | Rejected — unnecessary abstraction, EC2 already exists |
+| Elastic Beanstalk | Rejected — more managed than needed |
+| EC2 + nginx + systemd | **Selected** |
+
+### Consequences
+- Deployments are `git pull` + `./scripts/deploy.sh` on the EC2
+- CDK manages S3 bucket and IAM role only — not the EC2 instance itself
+- SSL via certbot, already configured on this EC2
+- Single-user only — no multi-user support in this architecture (see Phase 3)
+
+---
+
+## ADR-008: S3 Storage Backend with StorageBackend Abstraction
+
+**Date**: 2026-04-14
+**Status**: Accepted
+
+### Context
+Rankings JSON files live on the local filesystem in development. In a
+deployed EC2 environment, files on disk are lost if the instance is
+rebuilt, and local file state creates friction during deployments. A
+storage abstraction is needed that allows local dev to continue using
+the filesystem while production reads/writes from S3.
+
+### Decision
+Introduce a `StorageBackend` ABC in `backend/utils/storage.py` with two
+implementations: `LocalStorage` (preserves all existing filesystem
+behaviour) and `S3Storage` (boto3, EC2 IAM instance role auth). A
+`get_storage()` factory selects the implementation via the
+`STORAGE_BACKEND` environment variable at startup.
+
+### Rationale
+- All 49 existing tests continue to pass against `LocalStorage` unchanged
+- S3 data survives EC2 rebuilds, reboots, and redeployments
+- IAM instance role is the correct AWS-native credential pattern — no
+  credentials in code, env files, or the repository
+- The access pattern (load once on page load, write on explicit user save)
+  is ideal for S3 — latency is imperceptible
+- `moto` allows full S3Storage test coverage without real AWS calls
+
+### Alternatives Considered
+| Option | Verdict |
+|--------|---------|
+| Keep files on EC2, manual backups | Rejected — fragile, not automated |
+| EFS mounted filesystem | Rejected — over-engineered for small JSON blobs |
+| DynamoDB | Rejected — ADR-002 established JSON as the data format |
+| S3 with StorageBackend abstraction | **Selected** |
+
+### Consequences
+- `boto3`, `python-jose[cryptography]`, `httpx` added to `requirements.txt`
+- `moto[s3]` added to `requirements-dev.txt`
+- `rankings.py` functions receive a `storage: StorageBackend` parameter
+- All existing tests refactored to pass `LocalStorage(tmp_path)` fixture —
+  no logic changes
+- S3 bucket structure mirrors local: `rankings/default.json`,
+  `rankings/seed.json`, `rankings/{name}.json`
+- `StorageBackend` is designed to support future user-scoped keys
+  (`rankings/{user_id}/default.json`) if multi-user is ever added
+
+---
+
 ## Template for New Decisions
 
 ```markdown
@@ -159,7 +248,9 @@ Retire Streamlit entirely. Migrate to:
 ## Key Principles
 
 1. **No approximations**: All player data from verified CSV exports
-2. **Local first**: No cloud, no API keys, no network calls at runtime
+2. **Two environments**: local dev (LocalStorage, no auth) / production (S3, Cognito JWT)
 3. **Rankings-only UI**: Historical data is seed infrastructure, not a feature
 4. **Graceful degradation**: Missing files warn the user, never crash
 5. **Full UI control**: React owns the frontend — no CSS framework fighting
+6. **Automate everything**: CDK, deploy scripts, systemd — no manual console steps
+7. **No credentials in code**: IAM roles and public Cognito IDs only
