@@ -8,6 +8,7 @@ import {
   addPlayer,
   deletePlayer,
   updateNotes,
+  setPlayerTier,
   saveRankings,
   saveAs,
   loadProfileApi,
@@ -141,6 +142,16 @@ function AppContent() {
     }
   }
 
+  const handleTierMove = async (position, rank, newTier) => {
+    try {
+      const updated = await setPlayerTier(position, rank, newTier)
+      setRankings(prev => ({ ...prev, [position]: updated }))
+      setDirty(true)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   const handleAdd = async (position, name, team, tier) => {
     const updated = await addPlayer(position, name, team, tier)
     setRankings(prev => ({ ...prev, [position]: updated }))
@@ -256,6 +267,7 @@ function AppContent() {
         searchResults={searchResults}
         onSelectResult={handleSelectResult}
         onReorder={handleReorder}
+        onTierMove={handleTierMove}
         onSave={handleSave}
         onSaveAsOpen={() => setSaveAsDialog(true)}
         onLoadOpen={() => setLoadDialog(true)}

@@ -1,9 +1,11 @@
+import { useRef, useEffect, useState } from 'react'
 import TierGroup from './TierGroup'
+import TierSeparator from './TierSeparator'
 import './PositionColumn.css'
 
 export default function PositionColumn({
   position, players, isDraft, getDraftStatus, onStatusClick,
-  onReorder, onNotesOpen, onAddOpen, onDeleteOpen,
+  onReorder, onNotesOpen, onAddOpen, onDeleteOpen, onTierMove,
 }) {
   // Group players by tier
   const tierGroups = {}
@@ -17,6 +19,17 @@ export default function PositionColumn({
     ? Math.max(...players.map(p => p.position_rank))
     : 0
 
+  // Measure row height from first PlayerRow
+  const firstRowRef = useRef(null)
+  const [rowHeight, setRowHeight] = useState(29)
+
+  useEffect(() => {
+    if (firstRowRef.current) {
+      const h = firstRowRef.current.getBoundingClientRect().height
+      if (h > 0) setRowHeight(h)
+    }
+  }, [players])
+
   return (
     <div className="position-column">
       <div className="column-header">
@@ -24,21 +37,38 @@ export default function PositionColumn({
         <span className="column-count">{players.length} players</span>
       </div>
 
-      {tierNums.map(tierNum => (
-        <TierGroup
-          key={tierNum}
-          position={position}
-          tierNum={tierNum}
-          players={tierGroups[tierNum]}
-          lastRank={lastRank}
-          isDraft={isDraft}
-          getDraftStatus={getDraftStatus}
-          onStatusClick={onStatusClick}
-          onReorder={onReorder}
-          onNotesOpen={onNotesOpen}
-          onAddOpen={onAddOpen}
-          onDeleteOpen={onDeleteOpen}
-        />
+      {tierNums.map((tierNum, idx) => (
+        <div key={tierNum}>
+          {/* Tier separator between adjacent tiers (not before first) */}
+          {idx > 0 && !isDraft && (
+            <TierSeparator
+              position={position}
+              upperTier={tierNums[idx - 1]}
+              lowerTier={tierNum}
+              upperCount={tierGroups[tierNums[idx - 1]].length}
+              lowerCount={tierGroups[tierNum].length}
+              rowHeight={rowHeight}
+              onBoundaryMove={onTierMove}
+              upperPlayers={tierGroups[tierNums[idx - 1]]}
+              lowerPlayers={tierGroups[tierNum]}
+            />
+          )}
+
+          <TierGroup
+            position={position}
+            tierNum={tierNum}
+            players={tierGroups[tierNum]}
+            lastRank={lastRank}
+            isDraft={isDraft}
+            getDraftStatus={getDraftStatus}
+            onStatusClick={onStatusClick}
+            onReorder={onReorder}
+            onNotesOpen={onNotesOpen}
+            onAddOpen={onAddOpen}
+            onDeleteOpen={onDeleteOpen}
+            firstRowRef={idx === 0 ? firstRowRef : undefined}
+          />
+        </div>
       ))}
 
       {players.length === 0 && (

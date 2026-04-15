@@ -230,6 +230,46 @@ behaviour) and `S3Storage` (boto3, EC2 IAM instance role auth). A
 
 ---
 
+## ADR-009: Draggable Tier Boundaries
+
+**Date**: 2026-04-15
+**Status**: Accepted
+
+### Context
+Tier boundaries are fixed at seeding time. Moving a player between tiers
+requires repeatedly pressing ▲▼ until they cross the boundary — slow and
+tedious when prepping multiple positions before a draft.
+
+ADR-001 (Streamlit era) stated "no drag-and-drop" but that concerned
+full player reordering via drag in Streamlit, which is now irrelevant
+since the project migrated to React (ADR-006). Tier boundary dragging
+is a distinct, narrower affordance: a single vertical axis, snapping to
+discrete rows, affecting only two adjacent tiers.
+
+### Decision
+Add draggable separator lines between adjacent tier groups in War Room
+mode. Dragging down moves the first player of the lower tier into the
+upper tier. Dragging up moves the last player of the upper tier into the
+lower tier. Movement snaps one player at a time.
+
+### Rationale
+- Tier boundaries are the most frequently adjusted aspect of rankings
+- One-player-at-a-time snapping keeps the operation atomic and reversible
+- Only the `tier` field changes — `position_rank` is untouched
+- Touch support is critical for mobile draft-day use
+
+### Constraints
+- Drag-and-drop for player reordering remains out of scope (▲▼ buttons stay)
+- Tier boundary drag is limited to War Room mode only (hidden in Draft Mode)
+- Empty tiers are prevented — separator stops when a tier has one player
+
+### Consequences
+- New `set_player_tier()` utility function + `PUT /{position}/{rank}/tier` endpoint
+- New `TierSeparator` React component with mouse and touch support
+- No data model changes — `tier` field already exists on every player
+
+---
+
 ## Template for New Decisions
 
 ```markdown

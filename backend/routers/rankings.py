@@ -19,6 +19,7 @@ from utils.rankings import (
     save_rankings,
     save_seed,
     seed_rankings,
+    set_player_tier,
     swap_players,
 )
 
@@ -77,6 +78,10 @@ class AddPlayerRequest(BaseModel):
 
 class NotesRequest(BaseModel):
     notes: str
+
+
+class SetTierRequest(BaseModel):
+    tier: int
 
 
 class SaveAsRequest(BaseModel):
@@ -259,6 +264,38 @@ def delete(request: Request, position: str, rank: int) -> list[dict]:
         )
 
     updated = delete_player(profile, position, rank)
+    _set_profile(updated)
+    return get_position_players(updated, position)
+
+
+@router.put("/{position}/{rank}/tier")
+def set_tier(
+    request: Request, position: str, rank: int, body: SetTierRequest
+) -> list[dict]:
+    """Reassign a player's tier without changing rank."""
+    _validate_position(position)
+    profile = get_profile(request)
+
+    # Find the player and validate
+    player = None
+    for p in profile["players"]:
+        if p["position"] == position and p["position_rank"] == rank:
+            player = p
+            break
+
+    if player is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Rank {rank} not found in {position}",
+        )
+
+    if abs(player["tier"] - body.tier) != 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Tier must be adjacent (±1) to current tier",
+        )
+
+    updated = set_player_tier(profile, position, rank, body.tier)
     _set_profile(updated)
     return get_position_players(updated, position)
 

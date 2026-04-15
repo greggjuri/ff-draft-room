@@ -1,9 +1,10 @@
+import { forwardRef } from 'react'
 import './PlayerRow.css'
 
-export default function PlayerRow({
+const PlayerRow = forwardRef(function PlayerRow({
   player, position, isFirst, isLast, isDraft, draftStatus, onStatusClick,
   onMoveUp, onMoveDown, onNameClick, onDeleteClick,
-}) {
+}, ref) {
   const nameLabel = player.notes ? `${player.name} 📝` : player.name
 
   const tierClass = player.tier % 2 === 0 ? 'tier-even' : 'tier-odd'
@@ -12,7 +13,7 @@ export default function PlayerRow({
 
   if (isDraft) {
     return (
-      <div className="player-row draft-row" data-player-id={`${position}-${player.position_rank}`}>
+      <div ref={ref} className="player-row draft-row" data-player-id={`${position}-${player.position_rank}`}>
         <span
           className={`draft-dot status-${draftStatus}`}
           onClick={onStatusClick}
@@ -26,7 +27,7 @@ export default function PlayerRow({
   }
 
   return (
-    <div className="player-row" data-player-id={`${position}-${player.position_rank}`}>
+    <div ref={ref} className="player-row" data-player-id={`${position}-${player.position_rank}`}>
       <button
         className="control-btn"
         disabled={isFirst}
@@ -62,4 +63,6 @@ export default function PlayerRow({
       </button>
     </div>
   )
-}
+})
+
+export default PlayerRow

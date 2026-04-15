@@ -46,6 +46,12 @@ export const updateNotes = (position, rank, notes) =>
     body: JSON.stringify({ notes })
   })
 
+export const setPlayerTier = (position, rank, tier) =>
+  request(`${BASE}/${position}/${rank}/tier`, {
+    method: 'PUT',
+    body: JSON.stringify({ tier })
+  })
+
 export const saveRankings = () =>
   request(`${BASE}/save`, { method: 'POST' })
 

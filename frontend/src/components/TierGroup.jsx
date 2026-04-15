@@ -3,7 +3,7 @@ import './TierGroup.css'
 
 export default function TierGroup({
   position, tierNum, players, lastRank, isDraft, getDraftStatus, onStatusClick,
-  onReorder, onNotesOpen, onAddOpen, onDeleteOpen,
+  onReorder, onNotesOpen, onAddOpen, onDeleteOpen, firstRowRef,
 }) {
   const tierClass = tierNum % 2 === 0 ? 'tier-even' : 'tier-odd'
 
@@ -13,9 +13,10 @@ export default function TierGroup({
         — TIER {tierNum} —
       </div>
 
-      {players.map(player => (
+      {players.map((player, idx) => (
         <PlayerRow
           key={player.position_rank}
+          ref={firstRowRef && idx === 0 ? firstRowRef : undefined}
           player={player}
           position={position}
           isFirst={player.position_rank === 1}

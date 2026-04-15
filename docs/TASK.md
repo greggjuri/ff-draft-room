@@ -22,6 +22,14 @@ _None_
 
 ## Recently Completed
 
+- [x] `10-init-tier-drag.md` — Draggable Tier Boundaries
+  - `set_player_tier()` backend utility + `PUT /{position}/{rank}/tier` endpoint
+  - `TierSeparator` component with mouse + touch drag support
+  - Empty tier guard prevents dragging below 1 player
+  - Adjacency validation (±1 only) on backend
+  - 5 new unit tests (69 total passing)
+  - ADR-009 (Draggable Tier Boundaries)
+
 - [x] `09-init-aws-deploy.md` — AWS Deployment
   - S3 StorageBackend abstraction (LocalStorage + S3Storage)
   - Cognito JWT auth middleware (conditional — prod only)

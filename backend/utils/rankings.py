@@ -265,6 +265,26 @@ def delete_player(
     return new_profile
 
 
+def set_player_tier(
+    profile: dict, position: str, position_rank: int, new_tier: int
+) -> dict:
+    """Reassign a single player's tier without changing their rank.
+
+    Returns a new profile dict — does not mutate input.
+    Raises ValueError if the player is not found.
+    """
+    new_profile = copy.deepcopy(profile)
+
+    for p in new_profile["players"]:
+        if p["position"] == position and p["position_rank"] == position_rank:
+            p["tier"] = new_tier
+            return new_profile
+
+    raise ValueError(
+        f"Player not found: {position} rank {position_rank}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Profile management
 # ---------------------------------------------------------------------------

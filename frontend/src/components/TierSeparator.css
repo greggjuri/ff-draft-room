@@ -1,0 +1,42 @@
+.tier-separator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  cursor: ns-resize;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.tier-separator-line {
+  flex: 1;
+  height: 2px;
+  background: #1E3A5F;
+  border-radius: 1px;
+}
+
+.tier-separator-grip {
+  color: #0076B6;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.tier-separator:hover .tier-separator-grip {
+  opacity: 1;
+}
+
+.tier-separator:hover .tier-separator-line {
+  background: #0076B6;
+  opacity: 0.8;
+}
+
+.tier-separator:active .tier-separator-line {
+  background: #0076B6;
+}
+
+.tier-separator:active .tier-separator-grip {
+  opacity: 1;
+}

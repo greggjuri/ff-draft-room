@@ -15,6 +15,7 @@ from utils.rankings import (
     load_or_seed,
     save_rankings,
     seed_rankings,
+    set_player_tier,
     swap_players,
 )
 from utils.storage import LocalStorage
@@ -328,3 +329,44 @@ def test_get_position_players_sorted(sample_profile):
     assert all(p["position"] == "QB" for p in qbs)
     ranks = [p["position_rank"] for p in qbs]
     assert ranks == sorted(ranks)
+
+
+# ---------------------------------------------------------------------------
+# Set player tier tests
+# ---------------------------------------------------------------------------
+
+
+def test_set_player_tier_changes_tier(sample_profile):
+    result = set_player_tier(sample_profile, "QB", 4, 1)
+    qbs = get_position_players(result, "QB")
+    p4 = next(p for p in qbs if p["name"] == "P4")
+    assert p4["tier"] == 1
+
+
+def test_set_player_tier_does_not_mutate(sample_profile):
+    original = copy.deepcopy(sample_profile)
+    set_player_tier(sample_profile, "QB", 4, 1)
+    assert sample_profile == original
+
+
+def test_set_player_tier_unknown_player(sample_profile):
+    with pytest.raises(ValueError, match="not found"):
+        set_player_tier(sample_profile, "QB", 99, 1)
+
+
+def test_set_player_tier_preserves_rank(sample_profile):
+    result = set_player_tier(sample_profile, "QB", 4, 1)
+    qbs = get_position_players(result, "QB")
+    p4 = next(p for p in qbs if p["name"] == "P4")
+    assert p4["position_rank"] == 4
+
+
+def test_set_player_tier_does_not_affect_others(sample_profile):
+    result = set_player_tier(sample_profile, "QB", 4, 1)
+    qbs = get_position_players(result, "QB")
+    # P1-P3 should still be tier 1, P5-P6 still tier 2
+    for p in qbs:
+        if p["name"] in ("P1", "P2", "P3"):
+            assert p["tier"] == 1
+        elif p["name"] in ("P5", "P6"):
+            assert p["tier"] == 2
