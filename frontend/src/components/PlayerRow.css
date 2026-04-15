@@ -97,8 +97,8 @@
 .draft-dot.status-other     { background: #9B59B6; }
 
 /* Name box draft status overrides */
-.player-name-btn.status-mine  { background: #1A7A3A !important; }
-.player-name-btn.status-other { background: #6B2FA0 !important; }
+.player-row .player-name-btn.status-mine  { background: #1A7A3A; }
+.player-row .player-name-btn.status-other { background: #6B2FA0; }
 
 /* Search highlight */
 .player-row.search-highlight .player-name-btn {

@@ -1,6 +1,14 @@
 import { forwardRef } from 'react'
 import { getLogoUrl } from '../utils/teamLogos'
+import { getTeamColor } from '../utils/teamColors'
 import './PlayerRow.css'
+
+const TIER_BASES = { odd: '#1A3A5C', even: '#2A5A8C' }
+const DRAFT_BASES = { mine: '#1A7A3A', other: '#6B2FA0' }
+
+function buildGradient(base, teamHex) {
+  return `linear-gradient(to right, ${base} 0%, ${base} 45%, color-mix(in srgb, ${teamHex} 22%, ${base}) 100%)`
+}
 
 const PlayerRow = forwardRef(function PlayerRow({
   player, position, isFirst, isLast, isDraft, draftStatus, onStatusClick,
@@ -11,6 +19,15 @@ const PlayerRow = forwardRef(function PlayerRow({
   const tierClass = player.tier % 2 === 0 ? 'tier-even' : 'tier-odd'
   const statusClass = isDraft ? `status-${draftStatus}` : ''
   const nameClasses = `player-name-btn ${tierClass} ${statusClass}`.trim()
+
+  const teamColor = getTeamColor(player.team)
+  let nameStyle
+  if (teamColor) {
+    const tierBase = player.tier % 2 === 0 ? TIER_BASES.even : TIER_BASES.odd
+    const draftBase = DRAFT_BASES[draftStatus] ?? null
+    const base = draftBase ?? tierBase
+    nameStyle = { background: buildGradient(base, teamColor) }
+  }
 
   const logoUrl = getLogoUrl(player.team)
   const logoEl = logoUrl ? (
@@ -31,7 +48,7 @@ const PlayerRow = forwardRef(function PlayerRow({
           title="Click to cycle: undrafted → mine → other"
         />
         <span className="player-rank">{player.position_rank}</span>
-        <span className={nameClasses}>
+        <span className={nameClasses} style={nameStyle}>
           <span className="player-name-text">{nameLabel}</span>
           {logoEl}
         </span>
@@ -61,7 +78,7 @@ const PlayerRow = forwardRef(function PlayerRow({
 
       <span className="player-rank">{player.position_rank}</span>
 
-      <button className={nameClasses} onClick={onNameClick}>
+      <button className={nameClasses} style={nameStyle} onClick={onNameClick}>
         <span className="player-name-text">{nameLabel}</span>
         {logoEl}
       </button>

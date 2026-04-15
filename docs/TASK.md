@@ -22,6 +22,12 @@ _None_
 
 ## Recently Completed
 
+- [x] `13-init-team-gradients.md` — Team Color Gradients on Name Boxes
+  - 32-team color map with `getTeamColor()` utility
+  - Gradient: flat tier/status base (0-45%) → 22% team color blend (100%)
+  - CSS `color-mix` for team tint, works on all draft status backgrounds
+  - Removed `!important` from draft status rules for inline style precedence
+
 - [x] `12-init-team-logos.md` — Team Logos on Player Name Boxes
   - ESPN CDN logos inside name box, right-aligned at 18px / 72% opacity
   - `getLogoUrl()` utility with JAC→jax normalization and free agent guard
