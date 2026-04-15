@@ -327,6 +327,20 @@ ff-draft-room/
 - [ ] Registration flow
 - [ ] Per-user profile isolation
 
+## PRP Review Process
+
+Before Claude Code runs `/execute-prp`, the generated PRP is reviewed
+in Claude.ai against the init spec. The review checks:
+
+1. **Completeness** — all files from the init are covered
+2. **Correctness** — logic matches the spec (edge cases, validation, data model)
+3. **Consistency** — no contradictions with existing ADRs or patterns
+4. **Test coverage** — new tests cover the new behaviour
+5. **Scope** — nothing out of scope has crept in
+
+PRPs scoring 9.5–10/10 proceed to execution unchanged.
+PRPs with issues get specific change requests before execution.
+
 ## Key Constraints
 
 1. **Two environments**: local dev (LocalStorage, no auth) and production (S3, Cognito JWT)
