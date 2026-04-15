@@ -22,6 +22,12 @@ _None_
 
 ## Recently Completed
 
+- [x] `12-init-team-logos.md` — Team Logos on Player Name Boxes
+  - ESPN CDN logos inside name box, right-aligned at 18px / 72% opacity
+  - `getLogoUrl()` utility with JAC→jax normalization and free agent guard
+  - Removed external team abbreviation text column from grid
+  - `onError` fallback hides broken images silently
+
 - [x] `11-init-visual-polish.md` — War Room Visual Enhancement
   - Position-specific accent colors (QB gold, RB green, WR blue, TE orange)
   - Column header 3px border + label in position color + depth sub-label

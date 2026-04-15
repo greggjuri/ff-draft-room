@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { getLogoUrl } from '../utils/teamLogos'
 import './PlayerRow.css'
 
 const PlayerRow = forwardRef(function PlayerRow({
@@ -11,6 +12,16 @@ const PlayerRow = forwardRef(function PlayerRow({
   const statusClass = isDraft ? `status-${draftStatus}` : ''
   const nameClasses = `player-name-btn ${tierClass} ${statusClass}`.trim()
 
+  const logoUrl = getLogoUrl(player.team)
+  const logoEl = logoUrl ? (
+    <img
+      src={logoUrl}
+      alt={player.team}
+      className="player-team-logo"
+      onError={e => { e.currentTarget.style.display = 'none' }}
+    />
+  ) : null
+
   if (isDraft) {
     return (
       <div ref={ref} className="player-row draft-row" data-player-id={`${position}-${player.position_rank}`}>
@@ -20,8 +31,10 @@ const PlayerRow = forwardRef(function PlayerRow({
           title="Click to cycle: undrafted → mine → other"
         />
         <span className="player-rank">{player.position_rank}</span>
-        <span className={nameClasses}>{nameLabel}</span>
-        <span className="player-team">{player.team}</span>
+        <span className={nameClasses}>
+          <span className="player-name-text">{nameLabel}</span>
+          {logoEl}
+        </span>
       </div>
     )
   }
@@ -49,10 +62,9 @@ const PlayerRow = forwardRef(function PlayerRow({
       <span className="player-rank">{player.position_rank}</span>
 
       <button className={nameClasses} onClick={onNameClick}>
-        {nameLabel}
+        <span className="player-name-text">{nameLabel}</span>
+        {logoEl}
       </button>
-
-      <span className="player-team">{player.team}</span>
 
       <button
         className="control-btn delete-btn"
