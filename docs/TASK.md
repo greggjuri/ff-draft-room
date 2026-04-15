@@ -22,6 +22,13 @@ _None_
 
 ## Recently Completed
 
+- [x] `11-init-visual-polish.md` — War Room Visual Enhancement
+  - Position-specific accent colors (QB gold, RB green, WR blue, TE orange)
+  - Column header 3px border + label in position color + depth sub-label
+  - Tier header 2px left-border in position color shades (odd/even)
+  - Background hash-mark texture (horizontal stripe, 2.8% opacity)
+  - CSS custom property cascade — no prop drilling needed
+
 - [x] `10-init-tier-drag.md` — Draggable Tier Boundaries
   - `set_player_tier()` backend utility + `PUT /{position}/{rank}/tier` endpoint
   - `TierSeparator` component with mouse + touch drag support

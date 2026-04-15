@@ -1,26 +1,51 @@
+/* Position-scoped design tokens */
+.position-qb {
+  --pos-color:      #C8881A;
+  --pos-color-mid:  #9A6A1A;
+  --pos-color-dark: #6A4A0A;
+}
+.position-rb {
+  --pos-color:      #239B52;
+  --pos-color-mid:  #1A7A3A;
+  --pos-color-dark: #0F4A25;
+}
+.position-wr {
+  --pos-color:      #0076B6;
+  --pos-color-mid:  #2A5A8C;
+  --pos-color-dark: #1A3A5C;
+}
+.position-te {
+  --pos-color:      #C0541A;
+  --pos-color-mid:  #9A4A1A;
+  --pos-color-dark: #6A2A0A;
+}
+
 .position-column:not(:last-child) {
   border-right: 1px solid var(--border);
   padding-right: 32px;
 }
 
 .column-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 12px;
+  border-bottom: 3px solid var(--pos-color);
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .column-position {
-  font-size: 16px;
-  font-weight: bold;
-  letter-spacing: 3px;
+  color: var(--pos-color);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  display: block;
 }
 
-.column-count {
-  color: var(--text-muted);
+.column-depth {
+  color: #4a7090;
   font-size: 10px;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-top: 2px;
 }
 
 .empty-column {

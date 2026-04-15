@@ -8,10 +8,13 @@
   color: var(--text-muted);
   padding: 4px 8px;
   margin: 8px 0 4px;
-  border-radius: 3px;
+  background: transparent;
+  border-left: 2px solid var(--pos-color-dark);
 }
 
-.tier-header { background: transparent; color: var(--text-muted); }
+.tier-header.tier-even {
+  border-left-color: var(--pos-color-mid);
+}
 
 .add-tier-btn {
   width: 100%;

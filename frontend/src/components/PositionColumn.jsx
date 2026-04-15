@@ -3,6 +3,8 @@ import TierGroup from './TierGroup'
 import TierSeparator from './TierSeparator'
 import './PositionColumn.css'
 
+const POSITION_DEPTH = { QB: 30, RB: 50, WR: 50, TE: 30 }
+
 export default function PositionColumn({
   position, players, isDraft, getDraftStatus, onStatusClick,
   onReorder, onNotesOpen, onAddOpen, onDeleteOpen, onTierMove,
@@ -31,10 +33,10 @@ export default function PositionColumn({
   }, [players])
 
   return (
-    <div className="position-column">
+    <div className={`position-column position-${position.toLowerCase()}`}>
       <div className="column-header">
         <span className="column-position">{position}</span>
-        <span className="column-count">{players.length} players</span>
+        <span className="column-depth">depth · {POSITION_DEPTH[position]}</span>
       </div>
 
       {tierNums.map((tierNum, idx) => (
