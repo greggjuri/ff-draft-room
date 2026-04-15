@@ -23,7 +23,7 @@ export default function WarRoom({
   addDialog, onAddOpen, onAddClose, onAdd,
   deleteDialog, onDeleteOpen, onDeleteClose, onDelete,
   saveAsDialog, onSaveAs, onSaveAsClose,
-  loadDialog, onLoad, onLoadClose,
+  loadDialog, onLoad, onLoadClose, activeProfile, onProfileRenamed, onProfileDeleted,
   resetDialog, onReset, onResetClose,
   setDefaultDialog, onSetDefault, onSetDefaultClose,
 }) {
@@ -129,7 +129,9 @@ export default function WarRoom({
       )}
 
       <SaveAsDialog isOpen={saveAsDialog} onSave={onSaveAs} onClose={onSaveAsClose} />
-      <LoadDialog isOpen={loadDialog} dirty={dirty} onLoad={onLoad} onClose={onLoadClose} />
+      <LoadDialog isOpen={loadDialog} dirty={dirty} activeProfile={activeProfile}
+        onLoad={onLoad} onProfileRenamed={onProfileRenamed} onProfileDeleted={onProfileDeleted}
+        onClose={onLoadClose} />
       <ResetConfirmDialog isOpen={resetDialog} onConfirm={onReset} onClose={onResetClose} />
       <SetDefaultConfirmDialog isOpen={setDefaultDialog} onConfirm={onSetDefault} onClose={onSetDefaultClose} />
       <ExitDraftConfirmDialog isOpen={exitDraftDialog} onConfirm={onConfirmExitDraft} onClose={onCancelExitDraft} />

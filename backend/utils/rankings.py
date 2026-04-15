@@ -364,6 +364,62 @@ def load_profile(
     return profile
 
 
+def rename_profile(
+    old_name: str,
+    new_name: str,
+    storage: StorageBackend | None = None,
+) -> dict:
+    """Rename a saved profile.
+
+    Reads old file, writes under new sanitized name, deletes old file.
+    Raises ValueError on invalid new_name or reserved names.
+    Raises FileNotFoundError if old profile does not exist.
+    """
+    if storage is None:
+        storage = _default_storage()
+
+    sanitized_new = _sanitize_name(new_name)
+    old_sanitized = old_name.strip().replace(" ", "_")
+    old_filename = f"{old_sanitized}.json"
+
+    profile = storage.read(old_filename)
+    if profile is None:
+        raise FileNotFoundError(f"Profile not found: {old_name}")
+
+    profile["name"] = new_name.strip()
+    new_filename = f"{sanitized_new}.json"
+    storage.write(new_filename, profile)
+    if new_filename != old_filename:
+        storage.delete(old_filename)
+
+    return {"renamed": True, "old_name": old_name.strip(), "new_name": new_name.strip()}
+
+
+def delete_profile(
+    name: str,
+    storage: StorageBackend | None = None,
+) -> dict:
+    """Delete a saved profile.
+
+    Raises ValueError if name is reserved.
+    Raises FileNotFoundError if profile does not exist.
+    """
+    if storage is None:
+        storage = _default_storage()
+
+    if name.strip().lower() in RESERVED_NAMES:
+        raise ValueError(f"'{name}' is a reserved name")
+
+    sanitized = name.strip().replace(" ", "_")
+    filename = f"{sanitized}.json"
+
+    if not storage.exists(filename):
+        raise FileNotFoundError(f"Profile not found: {name}")
+
+    storage.delete(filename)
+    return {"deleted": True, "name": name.strip()}
+
+
 def save_seed(
     profile: dict, storage: StorageBackend | None = None
 ) -> bool:

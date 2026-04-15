@@ -22,24 +22,25 @@ _None_
 
 ## Recently Completed
 
-- [x] `13-init-team-gradients.md` — Team Color Gradients on Name Boxes
-  - 32-team color map with `getTeamColor()` utility
-  - Gradient: flat tier/status base (0-45%) → 22% team color blend (100%)
-  - CSS `color-mix` for team tint, works on all draft status backgrounds
-  - Removed `!important` from draft status rules for inline style precedence
+- [x] `14-init-profile-rename-delete.md` — Profile rename and delete
+  - Inline rename input + delete confirm in Load dialog
+  - Active profile indicator (● dot)
+  - rename_profile() + delete_profile() backend utilities
+  - POST /rename + DELETE /profile/{name} endpoints
+  - 7 new tests (76 total passing)
 
-- [x] `12-init-team-logos.md` — Team Logos on Player Name Boxes
-  - ESPN CDN logos inside name box, right-aligned at 18px / 72% opacity
-  - `getLogoUrl()` utility with JAC→jax normalization and free agent guard
-  - Removed external team abbreviation text column from grid
-  - `onError` fallback hides broken images silently
+- [x] `11-init-visual-polish.md` — Position-specific column accent colors
+  - QB gold, RB green, WR blue, TE orange — header border + tier left-border
+  - depth · N sub-label on column headers
+  - Background texture attempted and rolled back — clean navy reads better
 
-- [x] `11-init-visual-polish.md` — War Room Visual Enhancement
-  - Position-specific accent colors (QB gold, RB green, WR blue, TE orange)
-  - Column header 3px border + label in position color + depth sub-label
-  - Tier header 2px left-border in position color shades (odd/even)
-  - Background hash-mark texture (horizontal stripe, 2.8% opacity)
-  - CSS custom property cascade — no prop drilling needed
+- [x] `12-init-team-logos.md` — NFL team logos on player name boxes
+  - ESPN CDN, right-aligned inside name box, 18px, opacity 72%
+  - JAC→jax normalization, silent fallback for FA/unknown
+
+- [x] `13-init-team-gradients.md` — Team color gradients on player name boxes
+  - Flat tier color left → team tint (22%) right, kicks in at 45%
+  - Applies in War Room and Draft Mode (tints draft status colors too)
 
 - [x] `10-init-tier-drag.md` — Draggable Tier Boundaries
   - `set_player_tier()` backend utility + `PUT /{position}/{rank}/tier` endpoint

@@ -6,9 +6,11 @@ import pandas as pd
 import pytest
 
 from utils.rankings import (
+    delete_profile,
     list_profiles,
     load_profile,
     load_seed_or_csv,
+    rename_profile,
     save_profile_as,
     save_seed,
 )
@@ -163,3 +165,63 @@ def test_reset_falls_back_to_csv(tmp_path):
     result = load_seed_or_csv(df, storage=store)
     assert len(result["players"]) > 0
     assert result["name"] == "2026 Draft"
+
+
+# ---------------------------------------------------------------------------
+# rename_profile
+# ---------------------------------------------------------------------------
+
+
+def test_rename_profile_renames_file(tmp_path):
+    store = LocalStorage(tmp_path)
+    store.write("Old_Name.json", _sample_profile("Old Name"))
+    rename_profile("Old Name", "New Name", storage=store)
+    assert not store.exists("Old_Name.json")
+    assert store.exists("New_Name.json")
+
+
+def test_rename_profile_updates_name_field(tmp_path):
+    store = LocalStorage(tmp_path)
+    store.write("Old_Name.json", _sample_profile("Old Name"))
+    rename_profile("Old Name", "New Name", storage=store)
+    data = store.read("New_Name.json")
+    assert data["name"] == "New Name"
+
+
+def test_rename_profile_rejects_reserved(tmp_path):
+    store = LocalStorage(tmp_path)
+    store.write("My_Board.json", _sample_profile())
+    with pytest.raises(ValueError, match="reserved"):
+        rename_profile("My Board", "default", storage=store)
+
+
+def test_rename_profile_404_if_missing(tmp_path):
+    store = LocalStorage(tmp_path)
+    with pytest.raises(FileNotFoundError):
+        rename_profile("Nonexistent", "New Name", storage=store)
+
+
+# ---------------------------------------------------------------------------
+# delete_profile
+# ---------------------------------------------------------------------------
+
+
+def test_delete_profile_removes_file(tmp_path):
+    store = LocalStorage(tmp_path)
+    store.write("To_Delete.json", _sample_profile())
+    delete_profile("To Delete", storage=store)
+    assert not store.exists("To_Delete.json")
+
+
+def test_delete_profile_rejects_reserved(tmp_path):
+    store = LocalStorage(tmp_path)
+    with pytest.raises(ValueError, match="reserved"):
+        delete_profile("default", storage=store)
+    with pytest.raises(ValueError, match="reserved"):
+        delete_profile("seed", storage=store)
+
+
+def test_delete_profile_404_if_missing(tmp_path):
+    store = LocalStorage(tmp_path)
+    with pytest.raises(FileNotFoundError):
+        delete_profile("Nonexistent", storage=store)

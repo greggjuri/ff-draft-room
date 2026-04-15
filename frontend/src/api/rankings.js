@@ -70,6 +70,17 @@ export const loadProfileApi = (name) =>
     body: JSON.stringify({ name })
   })
 
+export const renameProfile = (name, newName) =>
+  request(`${BASE}/rename`, {
+    method: 'POST',
+    body: JSON.stringify({ name, new_name: newName }),
+  })
+
+export const deleteProfileApi = (name) =>
+  request(`${BASE}/profile/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+  })
+
 export const resetRankings = () =>
   request(`${BASE}/reset`, { method: 'POST' })
 

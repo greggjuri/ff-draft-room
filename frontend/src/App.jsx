@@ -235,6 +235,15 @@ function AppContent() {
     }
   }
 
+  const handleProfileRenamed = (newName) => {
+    setProfileName(newName)
+  }
+
+  const handleProfileDeleted = () => {
+    setProfileName('2026 Draft')
+    reloadAllPositions(setRankings)
+  }
+
   const handleSetDefault = async () => {
     try {
       await setDefaultSeed()
@@ -304,6 +313,9 @@ function AppContent() {
         loadDialog={loadDialog}
         onLoad={handleLoad}
         onLoadClose={() => setLoadDialog(false)}
+        activeProfile={profileName}
+        onProfileRenamed={handleProfileRenamed}
+        onProfileDeleted={handleProfileDeleted}
         resetDialog={resetDialog}
         onReset={handleReset}
         onResetClose={() => setResetDialog(false)}

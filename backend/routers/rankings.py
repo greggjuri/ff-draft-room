@@ -10,11 +10,13 @@ from utils.data_loader import load_all_players
 from utils.rankings import (
     add_player,
     delete_player,
+    delete_profile,
     get_position_players,
     list_profiles,
     load_or_seed,
     load_profile,
     load_seed_or_csv,
+    rename_profile,
     save_profile_as,
     save_rankings,
     save_seed,
@@ -90,6 +92,11 @@ class SaveAsRequest(BaseModel):
 
 class LoadRequest(BaseModel):
     name: str
+
+
+class RenameRequest(BaseModel):
+    name: str
+    new_name: str
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +195,32 @@ def reset(request: Request) -> dict:
     save_rankings(profile, storage=_get_storage(request))
     _set_profile(profile)
     return profile
+
+
+@router.post("/rename")
+def rename(request: Request, body: RenameRequest) -> dict:
+    """Rename a saved profile."""
+    try:
+        result = rename_profile(
+            body.name, body.new_name, storage=_get_storage(request)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return result
+
+
+@router.delete("/profile/{name}")
+def delete_saved_profile(request: Request, name: str) -> dict:
+    """Delete a saved profile."""
+    try:
+        result = delete_profile(name, storage=_get_storage(request))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return result
 
 
 @router.get("/{position}")
