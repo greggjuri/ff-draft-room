@@ -44,10 +44,10 @@
   line-height: 1;
 }
 
-.player-tag.tag-cross {
-  color: #E03030;
-  font-size: 14px;
-}
+.player-tag.tag-heart   { color: #E03030; font-size: 22px; }
+.player-tag.tag-warning { color: #F0B429; font-size: 22px; }
+.player-tag.tag-skull   { color: #E0E0E0; font-size: 22px; }
+.player-tag.tag-cross   { color: #E03030; font-size: 22px; }
 
 .player-team-logo {
   height: 18px;

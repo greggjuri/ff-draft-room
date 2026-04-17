@@ -45,7 +45,7 @@ const PlayerRow = forwardRef(function PlayerRow({
   }
 
   const tagIcon = player.tag && TAG_ICONS[player.tag] ? (
-    <span className={`player-tag ${player.tag === 'cross' ? 'tag-cross' : ''}`}>
+    <span className={`player-tag tag-${player.tag}`}>
       {TAG_ICONS[player.tag]}
     </span>
   ) : null

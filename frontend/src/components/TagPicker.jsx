@@ -6,7 +6,7 @@ const TAGS = [
   { key: 'fire',    label: '🔥', title: 'Breakout'  },
   { key: 'gem',     label: '💎', title: 'Sleeper'   },
   { key: 'warning', label: '⚠',  title: 'Risky'     },
-  { key: 'cross',   label: '✚',  title: 'Hurt',  className: 'tag-cross' },
+  { key: 'cross',   label: '✚',  title: 'Hurt'      },
   { key: 'skull',   label: '☠',  title: 'Avoid'     },
   { key: 'flag',    label: '🚩', title: 'Red flag'  },
 ]
@@ -46,7 +46,7 @@ export default function TagPicker({ activeTag, position, onSelect, onClose }) {
       {TAGS.map(tag => (
         <button
           key={tag.key}
-          className={`tag-btn ${tag.className || ''} ${activeTag === tag.key ? 'active' : ''}`}
+          className={`tag-btn tag-${tag.key} ${activeTag === tag.key ? 'active' : ''}`}
           title={tag.title}
           onClick={() => handleSelect(tag.key)}
         >
