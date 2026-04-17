@@ -33,7 +33,7 @@ pytest tests/test_rankings.py -v
 pytest tests/ -q
 ```
 
-**Current test count**: 49 passing, 1 skipped (vor placeholder)
+**Current test count**: 76 passing, 1 skipped (vor placeholder)
 
 **Minimum Coverage**: 80% for `backend/utils/`
 
@@ -41,10 +41,11 @@ pytest tests/ -q
 
 ```
 tests/
-├── conftest.py                  # sys.path → backend/
+├── conftest.py                  # sys.path + storage fixture (LocalStorage)
 ├── test_data_loader.py          # 8 tests — CSV loading + normalization
-├── test_rankings.py             # 27 tests — seed, CRUD, swap, add, delete
-├── test_profile_management.py   # 14 tests — list, save-as, load, reset, seed
+├── test_rankings.py             # 32 tests — seed, CRUD, swap, add, delete, set_player_tier
+├── test_profile_management.py   # 21 tests — list, save-as, load, reset, seed, rename, delete
+├── test_storage.py              # 15 tests — LocalStorage, S3Storage (moto), get_storage factory
 └── test_vor.py                  # Future (1 skipped placeholder)
 ```
 
@@ -101,6 +102,29 @@ cd frontend && npm run dev
 - [ ] × button clears search
 - [ ] "zzzzz" → "No players found"
 - [ ] Header sticks to top on scroll
+
+### Checklist — Tier Drag
+- [ ] Draggable separator visible between adjacent tiers
+- [ ] Drag down → first player of lower tier joins upper tier
+- [ ] Drag up → last player of upper tier joins lower tier
+- [ ] Separator stops at 1-player tier (no empty tiers)
+- [ ] Separator hidden in Draft Mode
+- [ ] Touch drag works on mobile
+
+### Checklist — Profile Rename/Delete
+- [ ] Load dialog shows Rename + Delete on each profile row
+- [ ] Active profile shows ● indicator
+- [ ] Rename → inline input → Save → list refreshes, header updates if active
+- [ ] Delete → inline confirm → removes profile
+- [ ] Delete active profile → header resets, data reloads
+
+### Checklist — Visual Polish
+- [ ] Column headers show position-specific colors (QB gold, RB green, WR blue, TE orange)
+- [ ] Depth sub-label shown below position label
+- [ ] Tier headers have left-border in position color shades
+- [ ] Team logos visible inside player name boxes (right-aligned)
+- [ ] Team color gradient visible on right portion of name boxes
+- [ ] Free agents have solid background, no logo, no gradient
 
 ### Checklist — Error Handling
 - [ ] Backend down → error banner shown
@@ -161,7 +185,7 @@ def test_save_as_creates_file(tmp_path):
 
 ## Pre-Commit Checklist
 
-- [ ] `pytest tests/ -q` passes (49+)
+- [ ] `pytest tests/ -q` passes (76+)
 - [ ] `ruff check backend/ tests/` — no errors
 - [ ] `cd frontend && npx vite build` — no errors
 - [ ] Backend starts: `uvicorn backend.main:app --reload`
@@ -169,4 +193,4 @@ def test_save_as_creates_file(tmp_path):
 
 ---
 
-*Last updated: 2026-03-31 (draft mode + search complete)*
+*Last updated: 2026-04-17 (tier drag, visual polish, team logos/gradients, profile rename/delete)*

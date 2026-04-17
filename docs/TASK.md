@@ -11,7 +11,6 @@ _None_
 
 ### Phase 1d — Polish
 - [ ] Export rankings to CSV
-- [ ] Rename / delete saved profiles
 
 ### Phase 2 — Live Draft (future)
 - [ ] Full draft board with round/pick tracking
@@ -159,7 +158,7 @@ git pull origin main
 
 ### Tests
 ```bash
-pytest tests/ --cov=backend         # 64 passing
+pytest tests/ --cov=backend         # 76 passing
 ruff check backend/ tests/          # zero errors
 ```
 
@@ -177,4 +176,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-04-14 (AWS deployment complete)*
+*Last updated: 2026-04-17 (Phase 1d polish: tier drag, visual polish, team logos/gradients, profile rename/delete)*
