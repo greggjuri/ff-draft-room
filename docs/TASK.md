@@ -10,7 +10,7 @@ _None_
 ## Backlog
 
 ### Phase 1d — Polish
-- [ ] Export rankings to CSV
+_Empty — all items complete or dropped_
 
 ### Phase 2 — Live Draft (future)
 - [ ] Full draft board with round/pick tracking
@@ -123,6 +123,9 @@ _None_
 
 - ~~K and D/ST columns~~ — **Dropped** (2026-04-14)
   - Not needed — handled separately during drafts
+
+- ~~Export rankings to CSV~~ — **Dropped** (2026-04-17)
+  - Not needed
 
 ---
 
