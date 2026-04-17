@@ -6,13 +6,23 @@ import './PlayerRow.css'
 const TIER_BASES = { odd: '#1A3A5C', even: '#2A5A8C' }
 const DRAFT_BASES = { mine: '#1A7A3A', other: '#6B2FA0' }
 
+const TAG_ICONS = {
+  heart:   '❤',
+  fire:    '🔥',
+  gem:     '💎',
+  warning: '⚠',
+  cross:   '✚',
+  skull:   '☠',
+  flag:    '🚩',
+}
+
 function buildGradient(base, teamHex) {
   return `linear-gradient(to right, ${base} 0%, ${base} 45%, color-mix(in srgb, ${teamHex} 22%, ${base}) 100%)`
 }
 
 const PlayerRow = forwardRef(function PlayerRow({
   player, position, isFirst, isLast, isDraft, draftStatus, onStatusClick,
-  onMoveUp, onMoveDown, onNameClick, onDeleteClick,
+  onMoveUp, onMoveDown, onNameClick, onDeleteClick, onTagOpen,
 }, ref) {
   const nameLabel = player.notes ? `${player.name} 📝` : player.name
 
@@ -28,6 +38,17 @@ const PlayerRow = forwardRef(function PlayerRow({
     const base = draftBase ?? tierBase
     nameStyle = { background: buildGradient(base, teamColor) }
   }
+
+  const handleContextMenu = (e) => {
+    e.preventDefault()
+    onTagOpen(player, position, { x: e.clientX, y: e.clientY })
+  }
+
+  const tagIcon = player.tag && TAG_ICONS[player.tag] ? (
+    <span className={`player-tag ${player.tag === 'cross' ? 'tag-cross' : ''}`}>
+      {TAG_ICONS[player.tag]}
+    </span>
+  ) : null
 
   const logoUrl = getLogoUrl(player.team)
   const logoEl = logoUrl ? (
@@ -48,7 +69,8 @@ const PlayerRow = forwardRef(function PlayerRow({
           title="Click to cycle: undrafted → mine → other"
         />
         <span className="player-rank">{player.position_rank}</span>
-        <span className={nameClasses} style={nameStyle}>
+        <span className={nameClasses} style={nameStyle} onContextMenu={handleContextMenu}>
+          {tagIcon}
           <span className="player-name-text">{nameLabel}</span>
           {logoEl}
         </span>
@@ -78,7 +100,8 @@ const PlayerRow = forwardRef(function PlayerRow({
 
       <span className="player-rank">{player.position_rank}</span>
 
-      <button className={nameClasses} style={nameStyle} onClick={onNameClick}>
+      <button className={nameClasses} style={nameStyle} onClick={onNameClick} onContextMenu={handleContextMenu}>
+        {tagIcon}
         <span className="player-name-text">{nameLabel}</span>
         {logoEl}
       </button>

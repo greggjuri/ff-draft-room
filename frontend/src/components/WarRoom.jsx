@@ -17,7 +17,7 @@ export default function WarRoom({
   getDraftStatus, onStatusClick, onEnterDraft, onExitDraft,
   exitDraftDialog, onConfirmExitDraft, onCancelExitDraft,
   searchQuery, onSearchChange, searchResults, onSelectResult,
-  onReorder, onTierMove, onSave,
+  onReorder, onTierMove, onTagOpen, onSave,
   onSaveAsOpen, onLoadOpen, onResetOpen, onSetDefaultOpen,
   notesDialog, onNotesOpen, onNotesClose, onNotesUpdate,
   addDialog, onAddOpen, onAddClose, onAdd,
@@ -94,6 +94,7 @@ export default function WarRoom({
             onNotesOpen={onNotesOpen}
             onAddOpen={onAddOpen}
             onDeleteOpen={onDeleteOpen}
+            onTagOpen={onTagOpen}
           />
         ))}
       </div>

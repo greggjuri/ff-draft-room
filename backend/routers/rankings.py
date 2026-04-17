@@ -21,6 +21,7 @@ from utils.rankings import (
     save_rankings,
     save_seed,
     seed_rankings,
+    set_player_tag,
     set_player_tier,
     swap_players,
 )
@@ -84,6 +85,10 @@ class NotesRequest(BaseModel):
 
 class SetTierRequest(BaseModel):
     tier: int
+
+
+class TagRequest(BaseModel):
+    tag: str
 
 
 class SaveAsRequest(BaseModel):
@@ -331,6 +336,33 @@ def set_tier(
     updated = set_player_tier(profile, position, rank, body.tier)
     _set_profile(updated)
     return get_position_players(updated, position)
+
+
+@router.put("/{position}/{rank}/tag")
+def update_tag(
+    request: Request, position: str, rank: int, body: TagRequest
+) -> dict:
+    """Set or clear the tag on a player."""
+    _validate_position(position)
+    profile = get_profile(request)
+
+    try:
+        updated = set_player_tag(profile, position, rank, body.tag)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    _set_profile(updated)
+
+    # Return the updated player
+    for p in updated["players"]:
+        if p["position"] == position and p["position_rank"] == rank:
+            p.setdefault("tag", "")
+            return p
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"Rank {rank} not found in {position}",
+    )
 
 
 @router.put("/{position}/{rank}/notes")

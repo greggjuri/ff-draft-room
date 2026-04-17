@@ -70,6 +70,12 @@ export const loadProfileApi = (name) =>
     body: JSON.stringify({ name })
   })
 
+export const setPlayerTag = (position, rank, tag) =>
+  request(`${BASE}/${position}/${rank}/tag`, {
+    method: 'PUT',
+    body: JSON.stringify({ tag }),
+  })
+
 export const renameProfile = (name, newName) =>
   request(`${BASE}/rename`, {
     method: 'POST',

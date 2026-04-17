@@ -1,0 +1,39 @@
+.tag-picker {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tag-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.tag-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tag-btn.active {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tag-btn.tag-cross {
+  color: #E03030;
+  font-size: 16px;
+}

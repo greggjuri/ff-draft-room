@@ -21,6 +21,14 @@ _None_
 
 ## Recently Completed
 
+- [x] `15-init-player-tags.md` — Player tag icons
+  - 7 tags: heart, fire, gem, warning, cross, skull, flag
+  - Right-click tag picker with toggle/clear, viewport clamping
+  - Tag icon rendered left of name text in name box
+  - set_player_tag() backend utility + PUT /{position}/{rank}/tag
+  - Backward compat: missing tag field defaults to "" on read
+  - 6 new tests (82 total passing)
+
 - [x] `14-init-profile-rename-delete.md` — Profile rename and delete
   - Inline rename input + delete confirm in Load dialog
   - Active profile indicator (● dot)

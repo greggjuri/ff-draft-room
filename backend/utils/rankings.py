@@ -75,6 +75,7 @@ def seed_rankings(df: pd.DataFrame) -> dict:
                 "position": position,
                 "tier": _assign_tier(position, i),
                 "notes": "",
+                "tag": "",
             })
 
     now = datetime.now(timezone.utc).isoformat()
@@ -133,10 +134,13 @@ def save_rankings(
 
 def get_position_players(profile: dict, position: str) -> list[dict]:
     """Return players for a position sorted by position_rank."""
-    return sorted(
+    players = sorted(
         [p for p in profile.get("players", []) if p["position"] == position],
         key=lambda p: p["position_rank"],
     )
+    for p in players:
+        p.setdefault("tag", "")
+    return players
 
 
 def swap_players(
@@ -227,6 +231,7 @@ def add_player(
         "position": position,
         "tier": tier,
         "notes": "",
+        "tag": "",
     }
 
     players.insert(insert_idx, new_player)
@@ -278,6 +283,33 @@ def set_player_tier(
     for p in new_profile["players"]:
         if p["position"] == position and p["position_rank"] == position_rank:
             p["tier"] = new_tier
+            return new_profile
+
+    raise ValueError(
+        f"Player not found: {position} rank {position_rank}"
+    )
+
+
+VALID_TAGS: frozenset[str] = frozenset(
+    {"", "heart", "fire", "gem", "warning", "cross", "skull", "flag"}
+)
+
+
+def set_player_tag(
+    profile: dict, position: str, position_rank: int, tag: str
+) -> dict:
+    """Set or clear the tag on a player.
+
+    Returns a new profile dict — does not mutate input.
+    Raises ValueError if tag is not in VALID_TAGS or player not found.
+    """
+    if tag not in VALID_TAGS:
+        raise ValueError(f"Invalid tag: {tag!r}")
+
+    new_profile = copy.deepcopy(profile)
+    for p in new_profile["players"]:
+        if p["position"] == position and p["position_rank"] == position_rank:
+            p["tag"] = tag
             return new_profile
 
     raise ValueError(

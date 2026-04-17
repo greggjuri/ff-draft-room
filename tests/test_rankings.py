@@ -15,6 +15,7 @@ from utils.rankings import (
     load_or_seed,
     save_rankings,
     seed_rankings,
+    set_player_tag,
     set_player_tier,
     swap_players,
 )
@@ -370,3 +371,46 @@ def test_set_player_tier_does_not_affect_others(sample_profile):
             assert p["tier"] == 1
         elif p["name"] in ("P5", "P6"):
             assert p["tier"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Set player tag tests
+# ---------------------------------------------------------------------------
+
+
+def test_set_player_tag_sets_tag(sample_profile):
+    result = set_player_tag(sample_profile, "QB", 1, "heart")
+    qbs = get_position_players(result, "QB")
+    p1 = next(p for p in qbs if p["name"] == "P1")
+    assert p1["tag"] == "heart"
+
+
+def test_set_player_tag_clears_tag(sample_profile):
+    tagged = set_player_tag(sample_profile, "QB", 1, "fire")
+    result = set_player_tag(tagged, "QB", 1, "")
+    qbs = get_position_players(result, "QB")
+    p1 = next(p for p in qbs if p["name"] == "P1")
+    assert p1["tag"] == ""
+
+
+def test_set_player_tag_invalid_tag(sample_profile):
+    with pytest.raises(ValueError, match="Invalid tag"):
+        set_player_tag(sample_profile, "QB", 1, "banana")
+
+
+def test_set_player_tag_not_found(sample_profile):
+    with pytest.raises(ValueError, match="not found"):
+        set_player_tag(sample_profile, "QB", 99, "heart")
+
+
+def test_set_player_tag_no_mutation(sample_profile):
+    original = copy.deepcopy(sample_profile)
+    set_player_tag(sample_profile, "QB", 1, "gem")
+    assert sample_profile == original
+
+
+def test_get_position_players_defaults_tag(sample_profile):
+    # sample_profile players don't have "tag" field — should default to ""
+    qbs = get_position_players(sample_profile, "QB")
+    for p in qbs:
+        assert p["tag"] == ""

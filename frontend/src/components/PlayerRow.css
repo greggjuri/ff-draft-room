@@ -38,6 +38,17 @@
   white-space: nowrap;
 }
 
+.player-tag {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.player-tag.tag-cross {
+  color: #E03030;
+  font-size: 14px;
+}
+
 .player-team-logo {
   height: 18px;
   width: auto;

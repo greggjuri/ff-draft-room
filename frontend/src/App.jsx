@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import LoginPage from './components/LoginPage'
 import WarRoom from './components/WarRoom'
+import TagPicker from './components/TagPicker'
 import {
   getPositionPlayers,
   reorderPlayers,
@@ -9,6 +10,7 @@ import {
   deletePlayer,
   updateNotes,
   setPlayerTier,
+  setPlayerTag,
   saveRankings,
   saveAs,
   loadProfileApi,
@@ -52,6 +54,9 @@ function AppContent() {
   const [loadDialog, setLoadDialog] = useState(false)
   const [resetDialog, setResetDialog] = useState(false)
   const [setDefaultDialog, setSetDefaultDialog] = useState(false)
+
+  // Tag picker state
+  const [tagPicker, setTagPicker] = useState(null)
 
   // Draft mode state
   const [mode, setMode] = useState('warroom')
@@ -161,6 +166,24 @@ function AppContent() {
         const reverted = await getPositionPlayers(position)
         setRankings(prev => ({ ...prev, [position]: reverted }))
       } catch { /* already showing error */ }
+      setError(err.message)
+    }
+  }
+
+  const handleTagOpen = (player, position, coords) => {
+    setTagPicker({ player, position, coords })
+  }
+
+  const handleTagSelect = async (tag) => {
+    if (!tagPicker) return
+    const { player, position } = tagPicker
+    setTagPicker(null)
+    try {
+      await setPlayerTag(position, player.position_rank, tag)
+      const updated = await getPositionPlayers(position)
+      setRankings(prev => ({ ...prev, [position]: updated }))
+      setDirty(true)
+    } catch (err) {
       setError(err.message)
     }
   }
@@ -290,6 +313,7 @@ function AppContent() {
         onSelectResult={handleSelectResult}
         onReorder={handleReorder}
         onTierMove={handleTierMove}
+        onTagOpen={handleTagOpen}
         onSave={handleSave}
         onSaveAsOpen={() => setSaveAsDialog(true)}
         onLoadOpen={() => setLoadDialog(true)}
@@ -323,6 +347,14 @@ function AppContent() {
         onSetDefault={handleSetDefault}
         onSetDefaultClose={() => setSetDefaultDialog(false)}
       />
+      {tagPicker && (
+        <TagPicker
+          activeTag={tagPicker.player.tag ?? ''}
+          position={tagPicker.coords}
+          onSelect={handleTagSelect}
+          onClose={() => setTagPicker(null)}
+        />
+      )}
     </>
   )
 }
