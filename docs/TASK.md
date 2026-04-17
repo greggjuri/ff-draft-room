@@ -21,6 +21,12 @@ _None_
 
 ## Recently Completed
 
+- [x] `16-init-roster-panel.md` — My Roster panel in Draft Mode
+  - Fixed bottom drawer with handle bar showing live pick counts
+  - 4 position sections with accent colors, tag icons, team logos
+  - Slide animation, padding-bottom for content clearance
+  - Pure frontend — no backend changes
+
 - [x] `15-init-player-tags.md` — Player tag icons
   - 7 tags: heart, fire, gem, warning, cross, skull, flag
   - Right-click tag picker with toggle/clear, viewport clamping

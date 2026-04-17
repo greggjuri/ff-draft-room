@@ -300,6 +300,7 @@ function AppContent() {
         mode={mode}
         isDraft={isDraft}
         hasPicks={hasPicks}
+        draftState={draftState}
         getDraftStatus={getDraftStatus}
         onStatusClick={cycleDraftStatus}
         onEnterDraft={enterDraftMode}

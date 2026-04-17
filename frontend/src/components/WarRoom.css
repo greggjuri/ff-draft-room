@@ -115,3 +115,11 @@
   gap: 32px;
   padding: 0 24px 24px;
 }
+
+.war-room.draft-mode .war-room-columns {
+  padding-bottom: 36px;
+}
+
+.war-room.roster-open .war-room-columns {
+  padding-bottom: calc(40vh + 36px);
+}

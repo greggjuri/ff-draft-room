@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import PositionColumn from './PositionColumn'
+import RosterPanel from './RosterPanel'
 import NotesDialog from './NotesDialog'
 import AddPlayerDialog from './AddPlayerDialog'
 import DeleteConfirmDialog from './DeleteConfirmDialog'
@@ -13,7 +15,7 @@ import './WarRoom.css'
 const POSITIONS = ['QB', 'RB', 'WR', 'TE']
 
 export default function WarRoom({
-  rankings, dirty, profileName, mode, isDraft, hasPicks,
+  rankings, dirty, profileName, mode, isDraft, hasPicks, draftState,
   getDraftStatus, onStatusClick, onEnterDraft, onExitDraft,
   exitDraftDialog, onConfirmExitDraft, onCancelExitDraft,
   searchQuery, onSearchChange, searchResults, onSelectResult,
@@ -27,10 +29,13 @@ export default function WarRoom({
   resetDialog, onReset, onResetClose,
   setDefaultDialog, onSetDefault, onSetDefaultClose,
 }) {
+  const [rosterPanelOpen, setRosterPanelOpen] = useState(false)
+
   const rootClass = [
     'war-room',
     isDraft && 'draft-mode',
     isDraft && hasPicks && 'has-picks',
+    isDraft && rosterPanelOpen && 'roster-open',
   ].filter(Boolean).join(' ')
 
   return (
@@ -136,6 +141,15 @@ export default function WarRoom({
       <ResetConfirmDialog isOpen={resetDialog} onConfirm={onReset} onClose={onResetClose} />
       <SetDefaultConfirmDialog isOpen={setDefaultDialog} onConfirm={onSetDefault} onClose={onSetDefaultClose} />
       <ExitDraftConfirmDialog isOpen={exitDraftDialog} onConfirm={onConfirmExitDraft} onClose={onCancelExitDraft} />
+
+      {isDraft && (
+        <RosterPanel
+          rankings={rankings}
+          draftState={draftState}
+          isOpen={rosterPanelOpen}
+          onToggle={() => setRosterPanelOpen(prev => !prev)}
+        />
+      )}
     </div>
   )
 }
