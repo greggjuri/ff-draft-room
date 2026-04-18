@@ -52,12 +52,13 @@ const PlayerRow = forwardRef(function PlayerRow({
 
   const logoUrl = getLogoUrl(player.team)
   const logoEl = logoUrl ? (
-    <img
-      src={logoUrl}
-      alt={player.team}
-      className="player-team-logo"
-      onError={e => { e.currentTarget.style.display = 'none' }}
-    />
+    <div className="team-logo-container">
+      <img
+        src={logoUrl}
+        alt={player.team}
+        onError={e => { e.currentTarget.style.display = 'none' }}
+      />
+    </div>
   ) : null
 
   if (isDraft) {

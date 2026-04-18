@@ -25,6 +25,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  overflow: hidden;
 }
 .player-name-btn.tier-odd  { background: #1A3A5C; }
 .player-name-btn.tier-even { background: #2A5A8C; }
@@ -49,12 +50,20 @@
 .player-tag.tag-skull   { color: #E0E0E0; font-size: 22px; }
 .player-tag.tag-cross   { color: #E03030; font-size: 22px; }
 
-.player-team-logo {
-  height: 18px;
-  width: auto;
+.team-logo-container {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.team-logo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   opacity: 0.72;
-  display: block;
 }
 
 .control-btn {
