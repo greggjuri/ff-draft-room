@@ -7,16 +7,24 @@ export default function TierSeparator({
   onBoundaryMove, upperPlayers, lowerPlayers,
 }) {
   const dragRef = useRef(null)
+  const isUpdatingRef = useRef(0)
+
+  const trackUpdate = (maybePromise) => {
+    if (!maybePromise || typeof maybePromise.then !== 'function') return
+    isUpdatingRef.current += 1
+    const clear = () => { isUpdatingRef.current -= 1 }
+    maybePromise.then(clear, clear)
+  }
 
   const handleSnap = useCallback((direction) => {
     if (direction === 'down' && lowerCount > 1 && lowerPlayers.length > 0) {
-      onBoundaryMove(position, lowerPlayers[0].position_rank, upperTier)
+      trackUpdate(onBoundaryMove(position, lowerPlayers[0].position_rank, upperTier))
     } else if (direction === 'up' && upperCount > 1 && upperPlayers.length > 0) {
-      onBoundaryMove(
+      trackUpdate(onBoundaryMove(
         position,
         upperPlayers[upperPlayers.length - 1].position_rank,
         lowerTier,
-      )
+      ))
     }
   }, [position, upperTier, lowerTier, upperCount, lowerCount,
       upperPlayers, lowerPlayers, onBoundaryMove])
@@ -63,11 +71,13 @@ export default function TierSeparator({
   }, [rowHeight, handleSnap])
 
   const onMouseDown = (e) => {
+    if (isUpdatingRef.current > 0) return
     e.preventDefault()
     startDrag(e.clientY)
   }
 
   const onTouchStart = (e) => {
+    if (isUpdatingRef.current > 0) return
     if (e.touches.length > 0) startDrag(e.touches[0].clientY)
   }
 
