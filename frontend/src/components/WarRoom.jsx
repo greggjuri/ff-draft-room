@@ -41,7 +41,7 @@ export default function WarRoom({
   return (
     <div className={rootClass}>
       <header className="war-room-header">
-        <div className="war-room-title">🏈 WAR ROOM</div>
+        <div className="war-room-title">🏈 THE BOARD</div>
 
         <div className="mode-toggle">
           <button
