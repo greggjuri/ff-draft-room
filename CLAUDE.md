@@ -8,8 +8,8 @@ deployed to AWS EC2 at `ff.jurigregg.com` for access from any device.
 
 **Two modes**: **War Room** (build and manage pre-draft rankings) and
 **Draft Mode** (mark players as drafted during a live draft).
-Historical FantasyPros data seeds the initial rankings baseline — it is
-infrastructure, not UI.
+Fantasy Footballers Podcast 2026 expert consensus rankings (ADR-010)
+seed the initial rankings baseline — it is infrastructure, not UI.
 
 **Repository**: github.com/greggjuri/ff-draft-room
 **Also mirrored to**: Gitea self-hosted (home lab)
@@ -116,8 +116,8 @@ ff-draft-room/
 ├── CLAUDE.md
 ├── env.production.example       # Template for EC2 .env.production (not in repo)
 ├── data/
-│   ├── players/                 # FantasyPros CSVs (read-only seed data)
-│   └── rankings/                # JSON profiles — local dev only
+│   ├── players/                 # Fantasy Footballers CSVs (read-only seed data)
+│   └── rankings/                # JSON profiles — local dev only (gitignored)
 ├── backend/
 │   ├── main.py                  # FastAPI app + CORS + storage init
 │   ├── middleware/

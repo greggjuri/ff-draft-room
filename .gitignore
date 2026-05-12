@@ -76,9 +76,9 @@ coverage.xml
 # Uncomment if you don't want to commit your CSVs:
 # data/players/*.csv
 
-# Rankings profiles — personal user data
-# Uncomment if you don't want to commit your saved rankings:
-# data/rankings/*.json
+# Rankings runtime state — never tracked
+# Local dev writes to these; production uses S3
+data/rankings/*.json
 
 # Jupyter (if used for data exploration)
 .ipynb_checkpoints/

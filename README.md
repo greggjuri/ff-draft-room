@@ -46,7 +46,8 @@ Built for 10-team half-PPR Yahoo leagues.
 
 ## Data
 
-All player data sourced from [FantasyPros](https://www.fantasypros.com) half-PPR season leaders exports.
+All player data sourced from [Fantasy Footballers Podcast](https://www.thefantasyfootballers.com)
+2026 expert consensus rankings (ADR-010).
 
 | Position | Depth |
 |----------|-------|
@@ -73,8 +74,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Add your FantasyPros CSV exports to data/players/:
-# QB_2025.csv, RB_2025.csv, WR_2025.csv, TE_2025.csv
+# Add your Fantasy Footballers Podcast CSVs to data/players/:
+# 2026 QB Draft Rankings - Fantasy Footballers Podcast.csv
+# 2026 RB Draft Rankings - Fantasy Footballers Podcast.csv
+# 2026 WR Draft Rankings - Fantasy Footballers Podcast.csv
+# 2026 TE Draft Rankings - Fantasy Footballers Podcast.csv
 
 # Frontend dependencies
 cd frontend && npm install && cd ..
@@ -122,10 +126,14 @@ Builds the frontend, copies the dist, restarts uvicorn via systemd.
 
 ## CSV Format
 
-FantasyPros half-PPR season leaders exports. Export from:
-`fantasypros.com → Fantasy Football → Leaders → [Position] → Half PPR → Export CSV`
+Fantasy Footballers Podcast 2026 expert consensus rankings (ADR-010).
+One CSV per position under `data/players/`, named:
 
-Expected columns: `#, Player, Pos, Team, GP, [week columns], AVG, TTL`
+    2026 {POSITION} Draft Rankings - Fantasy Footballers Podcast.csv
+
+Expected columns: `Name, Team, Rank, Andy, Jason, Mike` — the loader
+uses `Name`, `Team`, `Rank` and ignores the per-host columns. Empty
+`Team` cells are preserved as empty strings for free agents.
 
 ## Development Workflow
 
@@ -164,7 +172,7 @@ ff-draft-room/
 ├── cdk/                     # AWS CDK infrastructure stack
 ├── scripts/                 # deploy.sh, cdk-bootstrap.sh, nginx, systemd
 ├── data/
-│   ├── players/             # FantasyPros CSV exports (seed data)
+│   ├── players/             # Fantasy Footballers CSV exports (seed data)
 │   └── rankings/            # Local dev JSON profiles
 ├── docs/                    # PLANNING, TASK, DECISIONS
 ├── initials/                # Feature specs
