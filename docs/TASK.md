@@ -21,6 +21,25 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `17-init-fantasy-footballers-import.md` — Fantasy Footballers 2026 seed
+  - Replaced FantasyPros half-PPR season-stats CSVs with Fantasy Footballers
+    Podcast 2026 expert rankings (one CSV per position, rank-only)
+  - `data_loader.py` rewrite: strict loader, FileNotFoundError on missing
+    file, FA empty-team preserved, legacy `{POS}_{YEAR}.csv` ignored
+  - `seed_rankings()` simplified: sort by rank ascending; year filter and
+    `total_pts` ordering removed
+  - `load_all_players` → `load_player_data` rename (3 router callsites)
+  - Pruned dead constants: `YEARS`, `CSV_COLUMN_MAP`, `SCHEMA_COLUMNS`,
+    `EXPECTED_COUNTS`
+  - 82 tests passing (net delta 0; +1 in test_data_loader, −1 in test_rankings)
+  - Tiered release follow-up: Fantasy Footballers ships tiered files in
+    ~1.5 weeks → separate init; tier assignment continues to use
+    `_assign_tier()` heuristic until then
+  - Production deploy: `POST /api/rankings/seed` on EC2 to force fresh
+    rebuild from new CSVs (see PRP-017 Step 10 for seed.json caveat)
+  - Follow-ups: ADR-010 to supersede ADR-003; separate cleanup PR to
+    `git rm --cached` `data/rankings/{default,seed}.json` and gitignore them
+
 - [x] `16-init-roster-panel.md` — My Roster panel in Draft Mode
   - Fixed bottom drawer with handle bar showing live pick counts
   - 4 position sections with accent colors, tag icons, team logos
@@ -193,4 +212,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-04-17 (Phase 1d polish: tier drag, visual polish, team logos/gradients, profile rename/delete)*
+*Last updated: 2026-05-12 (PRP-017 Fantasy Footballers seed import)*
