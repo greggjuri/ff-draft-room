@@ -21,6 +21,17 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `18-init-untrack-rankings-and-doc-cleanup.md` — Repo hygiene
+  - `git rm --cached` `data/rankings/{default,seed}.json`; rule
+    activated in `.gitignore` (was commented out)
+  - README.md: rewrote CSV Format + player-data attribution + setup
+    block for Fantasy Footballers format; updated structure block
+  - CLAUDE.md: updated intro paragraph + structure block (marks
+    rankings/ as gitignored)
+  - Smoke test confirmed: `POST /api/rankings/save` mutates disk file
+    but git status stays clean
+  - Single atomic commit (`766ead1`), no deploy needed
+
 - [x] `17-init-fantasy-footballers-import.md` — Fantasy Footballers 2026 seed
   - Replaced FantasyPros half-PPR season-stats CSVs with Fantasy Footballers
     Podcast 2026 expert rankings (one CSV per position, rank-only)
@@ -212,4 +223,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-05-12 (PRP-017 Fantasy Footballers seed import)*
+*Last updated: 2026-05-12 (PRP-018 untrack rankings JSONs + doc cleanup)*
