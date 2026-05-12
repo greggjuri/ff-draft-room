@@ -49,10 +49,11 @@ No approximations, no fallbacks, no hardcoded data.
 - Fully offline at runtime
 
 ### Superseded Because
-The FantasyPros stat exports were a stand-in (sorting by prior-year
-`total_pts` as a ranking proxy). Fantasy Footballers Podcast now
-publishes 2026 expert consensus rankings — purpose-built for drafts.
-See ADR-010.
+FantasyPros season-leaders data was a stand-in source — prior-year
+`total_pts` as a proxy for expert ranking. Fantasy Footballers Podcast
+2026 expert consensus rankings are a better fit for a draft cheat sheet.
+The underlying principles (offline CSV exports, no approximations) are
+preserved by ADR-010.
 
 ---
 

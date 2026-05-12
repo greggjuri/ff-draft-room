@@ -81,7 +81,8 @@ git pull origin main
 1. **Two environments**: local dev uses LocalStorage + no auth; production uses S3 + Cognito JWT
 2. **File size limit: 500 lines** — split into modules when approaching
 3. **Commit after every feature** — atomic, working commits
-4. **Data source**: FantasyPros half-PPR CSV exports only — no approximations
+4. **Data source**: Fantasy Footballers Podcast 2026 expert consensus
+   rankings CSVs only (ADR-010) — no approximations, no fallbacks
 5. **No Streamlit** — retired (ADR-006). Do not add Streamlit back.
 6. **No credentials in code** — EC2 uses IAM instance role for S3 access; Cognito IDs are not secrets
 
