@@ -76,6 +76,8 @@ ADR-010 — Fantasy Footballers as Seed Source).
 ```
 backend/utils/data_loader.py        # REWRITE — new function + behavior
 backend/utils/rankings.py           # MODIFY — simplify seed_rankings()
+backend/utils/constants.py          # MODIFY — delete YEARS, CSV_COLUMN_MAP,
+                                    #          SCHEMA_COLUMNS, EXPECTED_COUNTS
 backend/routers/rankings.py         # MODIFY — rename load_all_players →
                                     #          load_player_data (3 sites)
                                     #          + update stale error msg
@@ -84,19 +86,19 @@ tests/test_rankings.py              # MODIFY — fixture shape + seed tests
 tests/test_profile_management.py    # MODIFY — _sample_df helper shape
 ```
 
-> **Files Touched correction vs. init**: the init listed routers/rankings.py
-> and test_profile_management.py only implicitly. They are included here
-> because:
+> **Files Touched correction vs. init**: the init listed routers/rankings.py,
+> constants.py, and test_profile_management.py only implicitly. They are
+> included here because:
 > - `routers/rankings.py` has 3 callsites of the renamed loader and a stale
 >   error string ("No 2025 data found in data/players/")
+> - `constants.py` carries 4 symbols that become dead code after the loader
+>   rewrite — delete in the same logical change rather than rotting on the
+>   import path (resolved open question)
 > - `test_profile_management.py` has a `_sample_df()` helper with the old
 >   `total_pts`/`year`/`gp`/`ppg` schema that drives `load_seed_or_csv` tests
 
 ### Files NOT Modified (intentional)
 ```
-backend/utils/constants.py          # YEARS, CSV_COLUMN_MAP, SCHEMA_COLUMNS,
-                                    # EXPECTED_COUNTS become unused —
-                                    # cleanup deferred (out of scope)
 data/players/QB_2020.csv … *_2025   # left on disk, loader ignores them
 frontend/**                         # no UI changes
 backend/main.py                     # no startup wiring changes
@@ -293,12 +295,6 @@ with HTTPException in the route layer (or let it 500 naturally; document
 which). Recommend explicit handling in `get_profile` to keep error UX
 consistent.
 
-> **Surgical option**: if we'd rather keep the router changes to a pure
-> rename (no error-handling churn), we can have `load_player_data()`
-> swallow missing files into an empty DataFrame and revert to a `df.empty`
-> check. **Default chosen: strict loader, explicit router handling.**
-> This is the cleaner long-term contract.
-
 ### Data Model — Unchanged
 Player rows in the rankings profile keep the existing shape:
 ```json
@@ -383,6 +379,31 @@ grep -n "load_all_players\|total_pts\|year == 2025\|No 2025 data" \
 ```
 - [ ] No remaining `load_all_players` references in repo
 - [ ] No remaining `total_pts` / `year` references in backend code
+
+---
+
+### Step 3.5 — Prune dead symbols from `constants.py`
+**Files**: `backend/utils/constants.py`
+
+After Steps 1–3, four symbols become unreferenced:
+- `YEARS`
+- `CSV_COLUMN_MAP`
+- `SCHEMA_COLUMNS`
+- `EXPECTED_COUNTS`
+
+Delete them. Keep `POSITIONS`, `VOR_REPLACEMENT_LEVELS`, and any other
+still-referenced symbols. Resulting file should be ~12 lines.
+
+**Validation**:
+```bash
+ruff check backend/utils/constants.py
+grep -rn "YEARS\|CSV_COLUMN_MAP\|SCHEMA_COLUMNS\|EXPECTED_COUNTS" \
+  backend/ tests/
+# expected: zero matches (the symbols themselves should not appear anywhere)
+```
+- [ ] All four symbols gone from `constants.py`
+- [ ] grep across `backend/` and `tests/` returns zero matches
+- [ ] `POSITIONS` and `VOR_REPLACEMENT_LEVELS` still present and unchanged
 
 ---
 
@@ -611,13 +632,13 @@ pytest tests/test_profile_management.py -v
 pytest tests/ -q
 ruff check backend/ tests/
 ```
-- [ ] All tests pass (target: 82 — same as before; +1 FA test, +1
-  missing-file test, +1 legacy-ignored test, +1 concat-order test, −1 deleted
-  2025-only test; net +3 → 85, or close)
+- [ ] All tests pass (target: 82 — same as before. `test_data_loader.py`
+  goes 8 → 9 (+1); `test_rankings.py` renames one test and deletes
+  `test_seed_uses_2025_only` (−1); `test_profile_management.py` unchanged
+  in count. Net delta: 0.)
 - [ ] ruff clean
 
-> Acceptance count is approximate; what matters is **all pass** and no
-> regressions. If the count drops, investigate before proceeding.
+> If the count drops below 82, investigate before proceeding.
 
 ---
 
@@ -641,22 +662,27 @@ curl -s http://localhost:8000/api/rankings/QB | python -m json.tool | head -20
 - [ ] `/api/rankings/QB` shows 30 players with `position_rank` 1..30
 - [ ] FA player (Aaron Rodgers) appears with `team == ""`
 
-> **Note**: `data/rankings/default.json` is gitignored after this step's
-> regeneration — but **the user has it as `M` (modified)** in current git
-> status. Decide before commit whether to keep the regenerated local
-> version checked in (it is a checked-in artifact). Existing repo
-> convention: yes, `default.json` is tracked. Recommend `git add` of the
-> regenerated file as part of the same commit as the code changes.
+> **Do not commit `data/rankings/default.json`.** It's a regenerable
+> artifact — any `POST /seed` or fresh `GET /api/rankings` will rebuild
+> it from the CSVs. Committing it creates a second source of truth that
+> drifts from the source data.
+>
+> `default.json` is currently tracked in git (pre-existing issue). **Do
+> not fix that in this PRP.** Flag it for a follow-up: a separate small
+> change should `git rm --cached data/rankings/default.json` and add
+> `data/rankings/default.json` (and `seed.json`) to `.gitignore`. For
+> this PRP: leave the currently-tracked file alone on disk and simply
+> don't include it in the `git add` set below.
 
 ---
 
 ### Step 9 — Commit + Push
 ```bash
 git add backend/utils/data_loader.py backend/utils/rankings.py \
+        backend/utils/constants.py \
         backend/routers/rankings.py \
         tests/test_data_loader.py tests/test_rankings.py \
         tests/test_profile_management.py \
-        data/rankings/default.json \
         "data/players/2026 QB Draft Rankings - Fantasy Footballers Podcast.csv" \
         "data/players/2026 RB Draft Rankings - Fantasy Footballers Podcast.csv" \
         "data/players/2026 TE Draft Rankings - Fantasy Footballers Podcast.csv" \
@@ -664,6 +690,8 @@ git add backend/utils/data_loader.py backend/utils/rankings.py \
 git commit -m "feat: replace FantasyPros seed with Fantasy Footballers 2026 rankings"
 git push origin main
 ```
+
+> **Explicitly excluded**: `data/rankings/default.json`. See Step 8 note.
 
 ---
 
@@ -674,24 +702,25 @@ git pull origin main
 ./scripts/deploy.sh
 ```
 
-**Force fresh seed from new CSVs** (one of these two paths):
-- **Option A — UI**: open the app, hit `RESET`. This works only if S3 has
-  no `seed.json`. If `seed.json` exists, it will be loaded and the new
-  CSVs are bypassed.
-- **Option B — wipe S3** (recommended): delete S3 objects
-  `rankings/default.json` and `rankings/seed.json` from the
-  `ff-draft-room-data` bucket. Next `/api/rankings` call lazy-seeds from
-  the new CSVs.
-
+**Force fresh seed from new CSVs**:
 ```bash
-# Option B (run anywhere with AWS creds for the bucket)
-aws s3 rm s3://ff-draft-room-data/rankings/default.json
-aws s3 rm s3://ff-draft-room-data/rankings/seed.json
+curl -X POST https://ff.jurigregg.com/api/rankings/seed \
+     -H "Authorization: Bearer <cognito-token>"
 ```
+This rebuilds `default.json` from the new CSVs unconditionally — no S3
+console access needed.
+
+**Caveat re: `seed.json`**: `POST /seed` does not touch `seed.json`. If
+you have previously clicked "Set as Default" in the UI, the old
+FantasyPros-derived baseline remains and will be restored on the next
+Reset. To make the new CSVs the Reset baseline too, either:
+- hit "Set as Default" again after `POST /seed` completes, or
+- delete `s3://ff-draft-room-data/rankings/seed.json` via AWS console.
 
 - [ ] App still loads at `https://ff.jurigregg.com`
-- [ ] After wipe, first page load shows the Fantasy Footballers consensus
-  (Josh Allen #1 QB, etc.)
+- [ ] After `POST /seed`, page reload shows the Fantasy Footballers
+  consensus (Josh Allen #1 QB, etc.)
+- [ ] `seed.json` baseline updated (or deleted) per caveat above
 
 ---
 
@@ -738,7 +767,7 @@ build, not a behavior check.
 
 | Step | Action | Expected Result | Pass? |
 |------|--------|-----------------|-------|
-| 1 | `pytest tests/ -q` | All tests pass, ~85 total | ☐ |
+| 1 | `pytest tests/ -q` | All tests pass, 82 total (net delta 0) | ☐ |
 | 2 | `ruff check backend/ tests/` | Clean | ☐ |
 | 3 | `rm data/rankings/default.json && rm -f data/rankings/seed.json` | Files gone | ☐ |
 | 4 | `uvicorn backend.main:app --reload` | Starts, no errors | ☐ |
@@ -750,7 +779,7 @@ build, not a behavior check.
 | 10 | `cd frontend && npx vite build` | Build clean | ☐ |
 | 11 | `cd frontend && npm run dev`, open browser | War Room renders, 4 columns of Fantasy Footballers players | ☐ |
 | 12 | Tier dividers / colors / logos | All work unchanged | ☐ |
-| 13 | Deploy to EC2, wipe S3 `default.json` + `seed.json`, reload site | New rankings visible | ☐ |
+| 13 | Deploy to EC2, `POST /api/rankings/seed`, reload site | New rankings visible | ☐ |
 
 ---
 
@@ -761,32 +790,25 @@ build, not a behavior check.
 | `FileNotFoundError` from loader | One of the 4 expected CSVs is missing | Raised by loader; router catches and returns `HTTPException(500, detail="Missing Fantasy Footballers file: ...")` |
 | Empty DataFrame from loader | All 4 files exist but have only header rows | `seed_rankings()` returns a profile with `players: []`. UI shows empty columns. Acceptable — operator-visible signal. |
 | `ValueError` on `int` coercion of `rank` | Source data has non-numeric rank | `pd.to_numeric(..., errors="coerce").fillna(0)` → rank becomes 0. Will sort first; cosmetic — operator can spot in UI. |
-| Stale S3 `default.json` after deploy | S3 still has FantasyPros-shape rankings | Operator wipes `default.json` (and `seed.json` if present) per Step 10 |
+| Stale S3 `default.json` after deploy | S3 still has FantasyPros-shape rankings | Operator hits `POST /api/rankings/seed` per Step 10 to force a fresh rebuild from the new CSVs |
 
 ---
 
 ## Open Questions
 
-- [ ] **Cleanup of unused constants** (`YEARS`, `CSV_COLUMN_MAP`,
-  `SCHEMA_COLUMNS`, `EXPECTED_COUNTS` in `constants.py`): leave for a
-  separate cleanup PRP? Init explicitly does not list `constants.py`, so
-  **default: leave them as dead code**, schedule cleanup with the tiered-
-  file follow-up.
-- [ ] **Cleanup of legacy `{POS}_{YEAR}.csv` files in `data/players/`**:
-  init says "kept on disk for now, loader will ignore them." **Default:
-  leave on disk**. The loader is tested to ignore them. Delete in a
-  separate PR once we're confident in the cutover (post first draft).
-- [ ] **ADR update**: ADR-003 (FantasyPros CSV as Sole Data Source) is now
-  factually stale. Init does not ask us to write the ADR. **Default:
-  defer**. Flag to Claude.ai to author ADR-010 ("Fantasy Footballers as
-  Seed Source — Supersedes ADR-003") as a separate doc PR.
-- [ ] **Function rename `load_all_players` → `load_player_data`**: init
-  uses `load_player_data` in the proposed signature. Router has 3
-  callsites. **Default: rename** (cleaner, reflects the new shape; the
-  3-line router diff is trivial). Alternative: keep `load_all_players`
-  to localize the diff. Either is defensible.
+All previously open questions have been resolved by review feedback:
 
-None of these block implementation.
+- **Constants cleanup** (`YEARS`, `CSV_COLUMN_MAP`, `SCHEMA_COLUMNS`,
+  `EXPECTED_COUNTS` in `constants.py`): **delete in this PRP.** Folded
+  into Step 3.5. Dead code on the import path rots; trivial edit.
+- **Function rename `load_all_players` → `load_player_data`**: **rename**
+  per init. 3-callsite router update in Step 3.
+- **ADR-010** (Fantasy Footballers as Seed Source — Supersedes ADR-003):
+  **defer.** Claude.ai will author after execution succeeds.
+- **Legacy `{POS}_{YEAR}.csv` cleanup**: **defer.** Loader is tested to
+  ignore them; safety net stays until post-draft.
+
+No outstanding blockers.
 
 ---
 
@@ -809,10 +831,14 @@ None of these block implementation.
 3. **Data — prod (EC2/S3)**:
    ```bash
    ./scripts/deploy.sh   # picks up reverted code
-   aws s3 rm s3://ff-draft-room-data/rankings/default.json
-   aws s3 rm s3://ff-draft-room-data/rankings/seed.json
+   curl -X POST https://ff.jurigregg.com/api/rankings/seed \
+        -H "Authorization: Bearer <cognito-token>"
    ```
-   First request after redeploy re-seeds from the old FantasyPros CSVs.
+   `POST /seed` under the reverted code re-seeds from the old FantasyPros
+   CSVs. If `seed.json` in S3 holds new-format rankings from a "Set as
+   Default" click before rollback, also overwrite it (hit "Set as Default"
+   again, or delete `s3://ff-draft-room-data/rankings/seed.json` via the
+   AWS console).
 
 4. **Verify**: load `/api/rankings/QB`; players should match prior
    FantasyPros-derived ordering (Lamar Jackson #1 QB by 2024 `total_pts`).
