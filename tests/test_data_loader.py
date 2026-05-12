@@ -1,91 +1,102 @@
-"""Unit tests for utils.data_loader."""
+"""Unit tests for utils.data_loader (Fantasy Footballers format)."""
 
-import pandas as pd
+from __future__ import annotations
+
 import pytest
 
-from utils.data_loader import load_position_year
+from utils.data_loader import FILENAME_TEMPLATE, load_player_data
 
-EXPECTED_COLUMNS = [
-    "rank", "name", "team", "position", "year", "gp", "ppg", "total_pts",
-]
+EXPECTED_COLUMNS = ["name", "team", "position", "rank"]
+
+
+def _write_csv(tmp_path, position: str, rows: list[tuple]) -> None:
+    """Write a Fantasy Footballers-format CSV for one position."""
+    header = '"Name","Team","Rank","Andy","Jason","Mike"\n'
+    body = "\n".join(
+        f'"{name}","{team}","{rank}","{rank}","{rank}","{rank}"'
+        for (name, team, rank) in rows
+    )
+    path = tmp_path / FILENAME_TEMPLATE.format(position=position)
+    path.write_text(header + body + "\n")
 
 
 @pytest.fixture
-def sample_qb_csv(tmp_path):
-    """Create a 3-row FantasyPros-format CSV with 'Pos' and weekly columns."""
-    content = (
-        '"#","Player","Pos","Team","GP","1","2","AVG","TTL"\n'
-        '"1"," Josh Allen ","QB"," BUF ","16","28.2","34.5","25.3","405.1"\n'
-        '"2","Lamar Jackson","QB","BAL","15","22.0","30.1","24.1","361.8"\n'
-        '"3","Jalen Hurts","QB","PHI","17","18.5","25.3","21.0","357.0"\n'
-    )
-    csv_file = tmp_path / "QB_2024.csv"
-    csv_file.write_text(content)
+def full_sample(tmp_path):
+    """Four position files, 3 rows each."""
+    _write_csv(tmp_path, "QB", [("Josh Allen", "BUF", 1),
+                                ("Lamar Jackson", "BAL", 2),
+                                ("Aaron Rodgers", "", 3)])
+    _write_csv(tmp_path, "RB", [("Bijan Robinson", "ATL", 1),
+                                ("Jahmyr Gibbs", "DET", 2),
+                                ("Saquon Barkley", "PHI", 3)])
+    _write_csv(tmp_path, "WR", [("CeeDee Lamb", "DAL", 1),
+                                ("Justin Jefferson", "MIN", 2),
+                                ("Ja'Marr Chase", "CIN", 3)])
+    _write_csv(tmp_path, "TE", [("Sam LaPorta", "DET", 1),
+                                ("Trey McBride", "ARI", 2),
+                                ("Brock Bowers", "LV", 3)])
     return tmp_path
 
 
-def test_load_position_year_valid(sample_qb_csv):
-    """Loading a valid CSV returns a DataFrame with correct columns and row count."""
-    df = load_position_year("QB", 2024, data_dir=sample_qb_csv)
-    assert isinstance(df, pd.DataFrame)
-    assert list(df.columns) == EXPECTED_COLUMNS
-    assert len(df) == 3
-
-
-def test_load_position_year_missing(tmp_path):
-    """Missing CSV returns empty DataFrame with correct schema, no exception."""
-    df = load_position_year("QB", 1990, data_dir=tmp_path)
-    assert df.empty
+def test_load_returns_expected_columns(full_sample):
+    df = load_player_data(data_dir=full_sample)
     assert list(df.columns) == EXPECTED_COLUMNS
 
 
-def test_column_rename(sample_qb_csv):
-    """FantasyPros column names are correctly mapped to normalized names."""
-    df = load_position_year("QB", 2024, data_dir=sample_qb_csv)
-    assert list(df.columns) == EXPECTED_COLUMNS
-    # Original FantasyPros names should not be present
-    assert "#" not in df.columns
-    assert "Player" not in df.columns
-    assert "TTL" not in df.columns
+def test_load_all_positions_present(full_sample):
+    df = load_player_data(data_dir=full_sample)
+    assert sorted(df["position"].unique().tolist()) == ["QB", "RB", "TE", "WR"]
+    assert (df["position"].value_counts() == 3).all()
 
 
-def test_year_column_added(sample_qb_csv):
-    """Year column is present with the correct integer value."""
-    df = load_position_year("QB", 2024, data_dir=sample_qb_csv)
-    assert "year" in df.columns
-    assert (df["year"] == 2024).all()
-    assert df["year"].dtype == int
+def test_load_drops_host_columns(full_sample):
+    df = load_player_data(data_dir=full_sample)
+    for col in ("Andy", "Jason", "Mike"):
+        assert col not in df.columns
 
 
-def test_whitespace_stripped(sample_qb_csv):
-    """Leading/trailing spaces are cleaned from name and team."""
-    df = load_position_year("QB", 2024, data_dir=sample_qb_csv)
-    # The fixture has " Josh Allen " and " BUF "
-    assert df.iloc[0]["name"] == "Josh Allen"
-    assert df.iloc[0]["team"] == "BUF"
-
-
-def test_dtype_enforcement(sample_qb_csv):
-    """Numeric columns have correct dtypes after coercion."""
-    df = load_position_year("QB", 2024, data_dir=sample_qb_csv)
+def test_load_rank_is_int(full_sample):
+    df = load_player_data(data_dir=full_sample)
     assert df["rank"].dtype == "int64"
-    assert df["gp"].dtype == "int64"
-    assert df["ppg"].dtype == "float64"
-    assert df["total_pts"].dtype == "float64"
 
 
-def test_position_from_parameter(sample_qb_csv):
-    """Position column comes from the function parameter, not the CSV."""
-    df = load_position_year("QB", 2024, data_dir=sample_qb_csv)
-    assert (df["position"] == "QB").all()
-    # Pos column from CSV should not appear
-    assert "Pos" not in df.columns
+def test_load_preserves_fa_empty_team(full_sample):
+    df = load_player_data(data_dir=full_sample)
+    rodgers = df[df["name"] == "Aaron Rodgers"].iloc[0]
+    assert rodgers["team"] == ""
+    assert rodgers["position"] == "QB"
 
 
-def test_unexpected_columns_returns_empty(tmp_path):
-    """CSV missing expected columns returns empty DataFrame."""
-    bad_csv = tmp_path / "QB_2024.csv"
-    bad_csv.write_text("colA,colB\n1,2\n")
-    df = load_position_year("QB", 2024, data_dir=tmp_path)
-    assert df.empty
-    assert list(df.columns) == EXPECTED_COLUMNS
+def test_load_strips_whitespace(tmp_path):
+    _write_csv(tmp_path, "QB", [(" Josh Allen ", " BUF ", 1)])
+    _write_csv(tmp_path, "RB", [("X", "Y", 1)])
+    _write_csv(tmp_path, "WR", [("X", "Y", 1)])
+    _write_csv(tmp_path, "TE", [("X", "Y", 1)])
+    df = load_player_data(data_dir=tmp_path)
+    qb = df[df["position"] == "QB"].iloc[0]
+    assert qb["name"] == "Josh Allen"
+    assert qb["team"] == "BUF"
+
+
+def test_load_missing_file_raises(tmp_path):
+    _write_csv(tmp_path, "QB", [("A", "B", 1)])
+    _write_csv(tmp_path, "RB", [("A", "B", 1)])
+    _write_csv(tmp_path, "WR", [("A", "B", 1)])
+    with pytest.raises(FileNotFoundError, match="TE"):
+        load_player_data(data_dir=tmp_path)
+
+
+def test_load_ignores_legacy_pos_year_csvs(full_sample):
+    """Legacy {POS}_{YEAR}.csv files in data_dir must not be read."""
+    (full_sample / "QB_2025.csv").write_text(
+        '"#","Player","Pos","Team","GP","AVG","TTL"\n'
+        '"1","Should Not Appear","QB","XXX","16","99.9","999.9"\n'
+    )
+    df = load_player_data(data_dir=full_sample)
+    assert "Should Not Appear" not in df["name"].values
+
+
+def test_load_concatenates_in_position_order(full_sample):
+    df = load_player_data(data_dir=full_sample)
+    first_position_block = df["position"].iloc[:3].unique().tolist()
+    assert first_position_block == ["QB"]

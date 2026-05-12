@@ -44,26 +44,16 @@ def _assign_tier(position: str, rank: int) -> int:
 
 
 def seed_rankings(df: pd.DataFrame) -> dict:
-    """Create initial rankings profile from 2025 data.
+    """Build the initial default profile from Fantasy Footballers rankings.
 
-    Filters to year == 2025, takes top N per position by total_pts,
-    assigns position_rank, tier, and empty notes.
+    Takes top N per position (per SEED_LIMITS) sorted by rank ascending,
+    assigns position_rank (1-indexed), tier (via _assign_tier), and empty
+    notes/tag.
     """
-    df_2025 = df[df["year"] == 2025]
-    if df_2025.empty:
-        logger.error("No 2025 data. Check data/players/ CSV files.")
-        return {
-            "name": "2026 Draft",
-            "created": datetime.now(timezone.utc).isoformat(),
-            "modified": datetime.now(timezone.utc).isoformat(),
-            "league": {"teams": 10, "scoring": "half_ppr"},
-            "players": [],
-        }
-
     players: list[dict] = []
     for position in POSITIONS:
-        pos_df = df_2025[df_2025["position"] == position].copy()
-        pos_df = pos_df.sort_values("total_pts", ascending=False)
+        pos_df = df[df["position"] == position].copy()
+        pos_df = pos_df.sort_values("rank", ascending=True)
         limit = SEED_LIMITS.get(position, 20)
         pos_df = pos_df.head(limit)
 

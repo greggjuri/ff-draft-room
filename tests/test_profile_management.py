@@ -32,8 +32,7 @@ def _sample_profile(name: str = "Test") -> dict:
 
 def _sample_df() -> pd.DataFrame:
     return pd.DataFrame([
-        {"name": f"QB_{i}", "team": "T", "position": "QB", "year": 2025,
-         "rank": i, "gp": 16, "ppg": 20.0, "total_pts": 300.0 - i}
+        {"name": f"QB_{i}", "team": "T", "position": "QB", "rank": i}
         for i in range(1, 6)
     ])
 

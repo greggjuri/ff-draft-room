@@ -27,18 +27,14 @@ from utils.storage import LocalStorage
 # ---------------------------------------------------------------------------
 
 
-def _make_players(position: str, n: int, year: int = 2025) -> list[dict]:
-    """Generate n fake player rows for a position."""
+def _make_players(position: str, n: int) -> list[dict]:
+    """Generate n fake player rows for a position (Fantasy Footballers shape)."""
     return [
         {
             "name": f"{position}_Player_{i}",
             "team": f"T{i:02d}",
             "position": position,
-            "year": year,
             "rank": i,
-            "gp": 16,
-            "ppg": round(25.0 - i * 0.3, 1),
-            "total_pts": round(400.0 - i * 5.0, 1),
         }
         for i in range(1, n + 1)
     ]
@@ -94,12 +90,14 @@ def test_seed_respects_depth_limits(sample_df):
         assert count <= limit
 
 
-def test_seed_sorted_by_total_pts(sample_df):
+def test_seed_sorted_by_rank(sample_df):
+    """First player per position has the lowest source rank (= position_rank 1)."""
     profile = seed_rankings(sample_df)
     for pos in SEED_LIMITS:
         players = [p for p in profile["players"] if p["position"] == pos]
-        # Players should be in descending total_pts order (rank 1 = highest)
         assert players[0]["position_rank"] == 1
+        # And the source rank for that player is 1 (top of the sorted list)
+        assert players[0]["name"] == f"{pos}_Player_1"
 
 
 def test_seed_position_rank_sequential(sample_df):
@@ -132,16 +130,6 @@ def test_seed_tier_nondecreasing(sample_df):
                 f"{pos} rank {players[i]['position_rank']}: "
                 f"tier {players[i]['tier']} < {players[i-1]['tier']}"
             )
-
-
-def test_seed_uses_2025_only():
-    """Seed ignores non-2025 data."""
-    rows_2024 = _make_players("QB", 5, year=2024)
-    rows_2025 = _make_players("QB", 5, year=2025)
-    df = pd.DataFrame(rows_2024 + rows_2025)
-    profile = seed_rankings(df)
-    qbs = [p for p in profile["players"] if p["position"] == "QB"]
-    assert len(qbs) == 5  # only 2025 rows
 
 
 def test_seed_notes_empty(sample_df):

@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from utils.constants import POSITIONS
-from utils.data_loader import load_all_players
+from utils.data_loader import load_player_data
 from utils.rankings import (
     add_player,
     delete_player,
@@ -44,7 +44,10 @@ def get_profile(request: Request) -> dict:
     """Lazy-load the rankings profile on first access."""
     global _profile
     if _profile is None:
-        df = load_all_players()
+        try:
+            df = load_player_data()
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=500, detail=str(e))
         _profile = load_or_seed(df, storage=_get_storage(request))
     return _profile
 
@@ -129,11 +132,10 @@ def save(request: Request) -> dict:
 @router.post("/seed")
 def seed(request: Request) -> dict:
     """Re-seed rankings from CSV data (nuclear reset)."""
-    df = load_all_players()
-    if df.empty:
-        raise HTTPException(
-            status_code=500, detail="No 2025 data found in data/players/"
-        )
+    try:
+        df = load_player_data()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     profile = seed_rankings(df)
     save_rankings(profile, storage=_get_storage(request))
     _set_profile(profile)
@@ -191,7 +193,10 @@ def set_default(request: Request) -> dict:
 @router.post("/reset")
 def reset(request: Request) -> dict:
     """Reset rankings to seed.json baseline or CSV data."""
-    df = load_all_players()
+    try:
+        df = load_player_data()
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     profile = load_seed_or_csv(df, storage=_get_storage(request))
     if not profile.get("players"):
         raise HTTPException(

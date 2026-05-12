@@ -1,4 +1,4 @@
-"""CSV data loading and normalization for FantasyPros exports."""
+"""CSV data loading for Fantasy Footballers 2026 expert rankings."""
 
 from __future__ import annotations
 
@@ -7,93 +7,43 @@ from pathlib import Path
 
 import pandas as pd
 
-from utils.constants import CSV_COLUMN_MAP, POSITIONS, SCHEMA_COLUMNS, YEARS
+from utils.constants import POSITIONS
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_DATA_DIR: Path = Path(__file__).parent.parent.parent / "data" / "players"
 
-_players_cache: pd.DataFrame | None = None
+FILENAME_TEMPLATE = "2026 {position} Draft Rankings - Fantasy Footballers Podcast.csv"
+
+OUTPUT_COLUMNS = ["name", "team", "position", "rank"]
 
 
-def _empty_dataframe() -> pd.DataFrame:
-    """Return an empty DataFrame with the correct schema."""
-    return pd.DataFrame(columns=SCHEMA_COLUMNS)
+def _load_one(position: str, data_dir: Path) -> pd.DataFrame:
+    path = data_dir / FILENAME_TEMPLATE.format(position=position)
+    if not path.exists():
+        raise FileNotFoundError(f"Missing Fantasy Footballers file: {path.name}")
+
+    df = pd.read_csv(path, usecols=["Name", "Team", "Rank"])
+    df = df.rename(columns={"Name": "name", "Team": "team", "Rank": "rank"})
+    df["position"] = position
+    df["rank"] = pd.to_numeric(df["rank"], errors="coerce").fillna(0).astype(int)
+    df["team"] = df["team"].fillna("").astype(str).str.strip()
+    df["name"] = df["name"].astype(str).str.strip()
+    return df[OUTPUT_COLUMNS]
 
 
-def load_position_year(
-    position: str, year: int, data_dir: Path | None = None
-) -> pd.DataFrame:
-    """Load and normalize player data for a given position and year.
+def load_player_data(data_dir: Path | None = None) -> pd.DataFrame:
+    """Load Fantasy Footballers 2026 rankings from data/players/.
 
-    Args:
-        position: One of "QB", "RB", "WR", "TE".
-        year: Season year (e.g. 2024).
-        data_dir: Directory containing CSV files. Defaults to data/players/.
+    Reads exactly one file per position using FILENAME_TEMPLATE.
+    Returns a DataFrame with columns: name, team, position, rank.
 
-    Returns:
-        Normalized DataFrame with columns matching SCHEMA_COLUMNS.
-        Returns empty DataFrame on missing file or bad columns.
+    Raises FileNotFoundError if any of the four expected files is missing.
+    Andy/Jason/Mike columns are ignored. Empty team strings are preserved
+    for free agents. Legacy {POS}_{YEAR}.csv files in the directory are
+    not read.
     """
     if data_dir is None:
         data_dir = DEFAULT_DATA_DIR
-
-    filename = f"{position}_{year}.csv"
-    path = data_dir / filename
-
-    try:
-        df = pd.read_csv(path, usecols=list(CSV_COLUMN_MAP.keys()))
-    except FileNotFoundError:
-        logger.warning("Missing: %s", filename)
-        return _empty_dataframe()
-    except ValueError:
-        # usecols specifies columns not in the CSV
-        logger.error("Unexpected columns in %s", filename)
-        return _empty_dataframe()
-
-    df = df.rename(columns=CSV_COLUMN_MAP)
-
-    # Add position (from parameter, not CSV) and year
-    df["position"] = position
-    df["year"] = year
-
-    # Coerce numeric types
-    for col in ("rank", "gp"):
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
-    for col in ("ppg", "total_pts"):
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
-
-    # Strip whitespace from string columns
-    df["name"] = df["name"].str.strip()
-    df["team"] = df["team"].str.strip()
-
-    # Ensure column order matches schema
-    df = df[SCHEMA_COLUMNS]
-
-    return df
-
-
-def load_all_players(data_dir: Path | None = None) -> pd.DataFrame:
-    """Load all positions and years into a single DataFrame.
-
-    Uses module-level cache so CSVs are only read once per process.
-    Never raises — missing files produce empty slices.
-    """
-    global _players_cache
-    if _players_cache is not None and data_dir is None:
-        return _players_cache
-
-    frames: list[pd.DataFrame] = []
-    for position in POSITIONS:
-        for year in YEARS:
-            frames.append(load_position_year(position, year, data_dir=data_dir))
-
-    if not frames:
-        return _empty_dataframe()
-
-    df = pd.concat(frames, ignore_index=True)
-
-    if data_dir is None:
-        _players_cache = df
-
-    return df
+    frames = [_load_one(pos, data_dir) for pos in POSITIONS]
+    return pd.concat(frames, ignore_index=True)
