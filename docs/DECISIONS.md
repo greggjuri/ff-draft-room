@@ -37,7 +37,7 @@ Use JSON files for all ranking profiles.
 ## ADR-003: FantasyPros CSV as Sole Data Source
 
 **Date**: 2026-03-22
-**Status**: Accepted
+**Status**: Superseded by ADR-010
 
 ### Decision
 Use exclusively FantasyPros half-PPR season leaders CSV exports.
@@ -47,6 +47,12 @@ No approximations, no fallbacks, no hardcoded data.
 - 24 CSV files already collected (4 positions × 6 years)
 - Verified authoritative source
 - Fully offline at runtime
+
+### Superseded Because
+The FantasyPros stat exports were a stand-in (sorting by prior-year
+`total_pts` as a ranking proxy). Fantasy Footballers Podcast now
+publishes 2026 expert consensus rankings — purpose-built for drafts.
+See ADR-010.
 
 ---
 
@@ -267,6 +273,86 @@ lower tier. Movement snaps one player at a time.
 - New `set_player_tier()` utility function + `PUT /{position}/{rank}/tier` endpoint
 - New `TierSeparator` React component with mouse and touch support
 - No data model changes — `tier` field already exists on every player
+
+---
+
+## ADR-010: Fantasy Footballers as Seed Source — Supersedes ADR-003
+
+**Date**: 2026-05-12
+**Status**: Accepted
+**Supersedes**: ADR-003
+
+### Context
+ADR-003 named FantasyPros half-PPR season-leaders CSV exports as the sole
+data source. That source was always a stand-in: the seed pipeline filtered
+to the most recent year and sorted by `total_pts` descending, using prior-
+season production as a rough proxy for the next year's expert ranking.
+This worked as scaffolding while the rest of the app was being built but
+was never the right signal for a draft cheat sheet — last year's
+points tell you who scored well in past circumstances (team, scheme,
+health), not who experts project for the upcoming season.
+
+Fantasy Footballers has now published 2026 expert consensus rankings as
+downloadable CSVs, one file per position. Their format is rank-only
+(`Name, Team, Rank, Andy, Jason, Mike`) — no weekly stats, no year
+dimension, no `total_pts`. The consensus `Rank` column is exactly what
+the seed should produce.
+
+### Decision
+Use Fantasy Footballers Podcast 2026 expert consensus rankings as the
+sole seed data source.
+
+- One CSV per position under `data/players/`, named
+  `2026 {POSITION} Draft Rankings - Fantasy Footballers Podcast.csv`
+- Loader reads `Name`, `Team`, `Rank`; ignores the three per-host
+  columns (Andy / Jason / Mike)
+- `seed_rankings()` sorts by `rank` ascending, takes the top N per
+  position per `SEED_LIMITS`, and assigns initial tiers via the existing
+  `_assign_tier()` heuristic
+- Loader is strict: missing files raise `FileNotFoundError`. No silent
+  fallback to an empty DataFrame.
+- Legacy FantasyPros `{POS}_{YEAR}.csv` files remain on disk during the
+  transition window but are ignored by the loader. They serve as a
+  rollback safety net and will be removed in a separate cleanup change
+  after the first live draft validates the cutover.
+
+### Rationale
+- **Right signal for the job.** Expert consensus rankings are
+  purpose-built for drafts. Prior-season `total_pts` is not.
+- **Simpler pipeline.** Four small rank-only files replace 24 multi-year
+  weekly-stats files. The loader dropped from ~200 LOC to ~50.
+- **Same principles preserved.** ADR-003's underlying commitments —
+  verified offline CSV exports, no approximations, no fallbacks, fully
+  offline at runtime — all remain intact. Only the source vendor changed.
+- **Future-proofed for tiers.** Fantasy Footballers will publish a
+  tiered version of these rankings in roughly 1.5 weeks. A follow-up
+  re-seed will pick up their tier assignments and replace the
+  `_assign_tier()` heuristic.
+
+### Consequences
+- **Tier heuristic is temporary.** `_assign_tier(position, position_rank)`
+  applies arbitrary tier breakpoints until the tiered Fantasy Footballers
+  files arrive. Tier boundaries until then are not meaningful expert
+  judgments — operator should expect to manually re-tier in the war room.
+- **Free-agent handling.** Fantasy Footballers leaves the `Team` field
+  blank for unsigned players (e.g. Aaron Rodgers at the time of first
+  release). The loader preserves this as an empty string, not NaN. The
+  UI's team-logo and color-gradient code paths must handle empty team
+  gracefully (already verified in production).
+- **ADR-003 retired.** All references in the codebase to "FantasyPros"
+  as the data source are now stale. Documentation has been updated;
+  `CLAUDE.md` constraint #4 still reads "FantasyPros half-PPR CSV exports
+  only" and should be updated in a documentation pass.
+- **Rollback path remains.** Old CSVs are still on disk; `git revert` of
+  PRP-017 plus deleting `s3://ff-draft-room-data/rankings/default.json`
+  restores the FantasyPros-derived seed. This safety net retires when the
+  legacy CSVs are removed (post-first-draft).
+
+### Related
+- PRP-017 — implementation
+- ADR-003 — superseded
+- Future: tiered-file ingestion init (when Fantasy Footballers ships
+  tiered files)
 
 ---
 
