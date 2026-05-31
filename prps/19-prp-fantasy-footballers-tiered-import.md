@@ -449,13 +449,32 @@ Aaron Rodgers `adp=''`; Carson Beck `bye_week=<NA>`.
 4. Extend `add_player()` signature with six optional kwargs
    (`bye_week`, `adp`, `projected_points`, `risk`, `upside`, `outlook`)
    and update the constructed `new_player` dict to include them. Numeric
-   defaults are `None`, string defaults are `""`. The existing required
-   positional args (`name`, `team`, `position`, `tier`) and all internal
-   logic (insertion index, renumber loop) stay byte-identical. The
-   router callsite (`backend/routers/rankings.py:287-290`) continues to
-   pass only the 4 required positionals — the new kwargs all take their
-   defaults, so the endpoint behaves identically for the current frontend.
-5. Leave everything else byte-identical
+   defaults are `None`, string defaults are `""`.
+
+   **Argument order — verified back-compatible.** Existing signature is
+   `add_player(profile, name, team, position, tier)`
+   (`backend/utils/rankings.py:178`). The new signature appends six
+   keyword-only args after `*`, preserving the existing positional
+   order:
+
+   ```python
+   def add_player(profile, name, team, position, tier, *,
+                  bye_week=None, adp="",
+                  projected_points=None, risk=None, upside=None,
+                  outlook=""):
+   ```
+
+   Because nothing positional changes, **no router or existing-test
+   reordering is required**:
+   - Router callsite (`backend/routers/rankings.py:287-290`) continues
+     to pass only the 4 required positionals — the new kwargs take
+     defaults, endpoint behaviour unchanged.
+   - Existing test calls (`tests/test_rankings.py:256, 264, 271, 280`,
+     all `add_player(sample_profile, "NewGuy", "ZZ", "QB", 1)`) continue
+     to pass.
+
+   Internal logic (insertion index, renumber loop) is byte-identical.
+5. Leave everything else in `rankings.py` byte-identical
 
 **Validation**:
 ```bash
@@ -789,8 +808,8 @@ non-decreasing.
 
 **Do not** add `bye_week`/`adp`/etc. fields to `sample_profile` (the
 CRUD-test fixture). The swap/add/delete tests don't care about those
-fields, and `add_player()` does not emit them either (out of scope per
-init).
+fields. `add_player()` now emits them with `None`/`""` defaults — see
+`test_add_player_emits_full_schema` for that coverage.
 
 **Validation**:
 ```bash
