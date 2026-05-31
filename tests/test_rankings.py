@@ -28,13 +28,20 @@ from utils.storage import LocalStorage
 
 
 def _make_players(position: str, n: int) -> list[dict]:
-    """Generate n fake player rows for a position (Fantasy Footballers shape)."""
+    """Generate n fake player rows for a position (tiered schema)."""
     return [
         {
             "name": f"{position}_Player_{i}",
             "team": f"T{i:02d}",
             "position": position,
             "rank": i,
+            "tier": ((i - 1) // 3) + 1,    # 3 players per tier — monotonic
+            "bye_week": 7 if i % 4 else pd.NA,   # mix populated + NA
+            "projected_points": 200.0 - i,
+            "risk": 5.0,
+            "upside": 5.0,
+            "adp": f"{i // 12 + 1}.{i % 12:02d}",   # "1.01", "1.02", …
+            "outlook": f"Outlook for {position} #{i}",
         }
         for i in range(1, n + 1)
     ]
@@ -402,3 +409,81 @@ def test_get_position_players_defaults_tag(sample_profile):
     qbs = get_position_players(sample_profile, "QB")
     for p in qbs:
         assert p["tag"] == ""
+
+
+# ---------------------------------------------------------------------------
+# Tiered-schema seeding tests (PRP-019)
+# ---------------------------------------------------------------------------
+
+
+def test_seed_tier_from_csv(sample_df):
+    """Tier comes from CSV column, not a heuristic."""
+    profile = seed_rankings(sample_df)
+    qb1 = next(p for p in profile["players"]
+               if p["position"] == "QB" and p["position_rank"] == 1)
+    assert qb1["tier"] == 1   # _make_players assigns tier=1 to i=1
+
+
+def test_seed_includes_bye_week_int(sample_df):
+    profile = seed_rankings(sample_df)
+    populated = [p for p in profile["players"] if p["bye_week"] is not None]
+    assert populated, "expected at least one populated bye_week"
+    for p in populated:
+        assert isinstance(p["bye_week"], int)
+
+
+def test_seed_bye_week_na_becomes_none(sample_df):
+    profile = seed_rankings(sample_df)
+    nones = [p for p in profile["players"] if p["bye_week"] is None]
+    assert nones, "expected at least one None bye_week (NA in fixture)"
+
+
+def test_seed_includes_adp_string(sample_df):
+    profile = seed_rankings(sample_df)
+    for p in profile["players"]:
+        assert isinstance(p["adp"], str)
+
+
+def test_seed_includes_projected_points_float(sample_df):
+    profile = seed_rankings(sample_df)
+    for p in profile["players"]:
+        assert isinstance(p["projected_points"], float)
+
+
+def test_seed_includes_risk_upside_float(sample_df):
+    profile = seed_rankings(sample_df)
+    for p in profile["players"]:
+        assert isinstance(p["risk"], float)
+        assert isinstance(p["upside"], float)
+
+
+def test_seed_includes_outlook_string(sample_df):
+    profile = seed_rankings(sample_df)
+    for p in profile["players"]:
+        assert isinstance(p["outlook"], str)
+        assert p["outlook"]   # non-empty in fixture
+
+
+def test_seed_no_assign_tier_symbol():
+    """Sanity: _assign_tier must not exist in rankings.py."""
+    from utils import rankings
+    assert not hasattr(rankings, "_assign_tier")
+    assert not hasattr(rankings, "TIER_BREAKPOINTS")
+
+
+def test_add_player_emits_full_schema(sample_profile):
+    """Manually-added players have the same 13 fields as seeded ones,
+    with optional fields defaulting to None/''."""
+    result = add_player(sample_profile, "Test Player", "FA", "QB", tier=5)
+    new_player = next(p for p in result["players"]
+                      if p["name"] == "Test Player")
+    assert new_player["bye_week"] is None
+    assert new_player["adp"] == ""
+    assert new_player["projected_points"] is None
+    assert new_player["risk"] is None
+    assert new_player["upside"] is None
+    assert new_player["outlook"] == ""
+    # Existing fields still present:
+    assert new_player["tier"] == 5
+    assert new_player["notes"] == ""
+    assert new_player["tag"] == ""

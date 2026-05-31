@@ -18,37 +18,19 @@ RANKINGS_DIR: Path = Path(__file__).parent.parent.parent / "data" / "rankings"
 
 SEED_LIMITS: dict[str, int] = {"QB": 30, "RB": 50, "WR": 50, "TE": 30}
 
-TIER_BREAKPOINTS: dict[str, list[tuple[int, int]]] = {
-    "QB": [(3, 1), (6, 2), (10, 3), (14, 4), (18, 5), (24, 6), (30, 7)],
-    "RB": [(4, 1), (8, 2), (12, 3), (16, 4), (24, 5), (32, 6), (42, 7), (50, 8)],
-    "WR": [(4, 1), (8, 2), (16, 3), (24, 4), (36, 5), (50, 6)],
-    "TE": [(3, 1), (6, 2), (10, 3), (14, 4), (18, 5), (24, 6), (30, 7)],
-}
-
 
 def _default_storage() -> StorageBackend:
     """Create default LocalStorage for backward compatibility."""
     return LocalStorage(RANKINGS_DIR)
 
 
-def _assign_tier(position: str, rank: int) -> int:
-    """Map a position rank to a tier number using TIER_BREAKPOINTS."""
-    breakpoints = TIER_BREAKPOINTS.get(position, [])
-    for max_rank, tier in breakpoints:
-        if rank <= max_rank:
-            return tier
-    # Beyond last breakpoint — return last tier number
-    if breakpoints:
-        return breakpoints[-1][1]
-    return 1
-
-
 def seed_rankings(df: pd.DataFrame) -> dict:
-    """Build the initial default profile from Fantasy Footballers rankings.
+    """Build the initial default profile from Fantasy Footballers tiered rankings.
 
-    Takes top N per position (per SEED_LIMITS) sorted by rank ascending,
-    assigns position_rank (1-indexed), tier (via _assign_tier), and empty
-    notes/tag.
+    Sorts by rank ascending, takes top N per position per SEED_LIMITS,
+    and emits player records with tier sourced directly from the CSV
+    (no heuristic) plus the six new analytical fields (bye_week, adp,
+    projected_points, risk, upside, outlook).
     """
     players: list[dict] = []
     for position in POSITIONS:
@@ -58,12 +40,19 @@ def seed_rankings(df: pd.DataFrame) -> dict:
         pos_df = pos_df.head(limit)
 
         for i, (_, row) in enumerate(pos_df.iterrows(), start=1):
+            bye = row["bye_week"]
             players.append({
                 "position_rank": i,
                 "name": row["name"],
                 "team": row["team"],
                 "position": position,
-                "tier": _assign_tier(position, i),
+                "tier": int(row["tier"]),
+                "bye_week": int(bye) if pd.notna(bye) else None,
+                "adp": row["adp"],
+                "projected_points": float(row["projected_points"]),
+                "risk": float(row["risk"]),
+                "upside": float(row["upside"]),
+                "outlook": row["outlook"],
                 "notes": "",
                 "tag": "",
             })
@@ -181,12 +170,24 @@ def add_player(
     team: str,
     position: str,
     tier: int,
+    *,
+    bye_week: int | None = None,
+    adp: str = "",
+    projected_points: float | None = None,
+    risk: float | None = None,
+    upside: float | None = None,
+    outlook: str = "",
 ) -> dict:
     """Add a new player at the end of the specified tier.
 
     Inserts after the last player with matching position and tier.
     Renumbers all subsequent players in the position.
     Returns a new profile dict — does not mutate input.
+
+    The six optional kwargs default to None / "" so seeded and
+    manually-added records share the same 13-field shape. None (not 0.0)
+    signals "unknown" for numeric fields — 0.0 would look like a real
+    low projection.
     """
     new_profile = copy.deepcopy(profile)
     players = new_profile["players"]
@@ -220,6 +221,12 @@ def add_player(
         "team": team,
         "position": position,
         "tier": tier,
+        "bye_week": bye_week,
+        "adp": adp,
+        "projected_points": projected_points,
+        "risk": risk,
+        "upside": upside,
+        "outlook": outlook,
         "notes": "",
         "tag": "",
     }
