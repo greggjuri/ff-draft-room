@@ -342,11 +342,41 @@ def seed_rankings(df: pd.DataFrame) -> dict:
 
 **Unchanged** in `rankings.py`: `SEED_LIMITS`, `_default_storage()`,
 `load_or_seed`, `save_rankings`, `get_position_players`, `swap_players`,
-`add_player`, `delete_player`, `set_player_tier`, `set_player_tag`, all
-profile-management helpers. `add_player()` still creates rows with the
-old 7-field shape (no `bye_week`/`adp`/etc.) — acceptable; out of scope
-per init ("New fields are captured in the data model only" — the seed,
-not the manual-add path).
+`delete_player`, `set_player_tier`, `set_player_tag`, all
+profile-management helpers.
+
+**Modified** in `rankings.py`: `add_player()` is extended to emit the
+same 13-field player record as the seed path, with the six new fields
+accepted as optional kwargs and defaulting to `None` / `""`. This keeps
+seeded and manually-added rows shape-consistent — downstream code
+(future UI work for the new fields) won't need to special-case
+manually-added players. The current 2-field AddPlayer dialog continues
+to call the existing endpoint unchanged; the frontend and router body
+schema stay the same in this PRP. Richer manual entry is deferred to
+PRP-020.
+
+New signature:
+
+```python
+def add_player(
+    profile: dict,
+    name: str,
+    team: str,
+    position: str,
+    tier: int,
+    *,
+    bye_week: int | None = None,
+    adp: str = "",
+    projected_points: float | None = None,
+    risk: float | None = None,
+    upside: float | None = None,
+    outlook: str = "",
+) -> dict:
+```
+
+`None` (not `0.0`) is the default for the numeric fields — `0.0` would
+look like a real low projection / risk / upside; `null` correctly
+signals "unknown" to the UI.
 
 ### Player Record Shape (post-seed)
 
@@ -410,13 +440,22 @@ Aaron Rodgers `adp=''`; Carson Beck `bye_week=<NA>`.
 
 ---
 
-### Step 2 — Simplify `seed_rankings()` + delete heuristic
+### Step 2 — Simplify `seed_rankings()` + delete heuristic + extend `add_player()`
 **Files**: `backend/utils/rankings.py`
 
 1. Delete `TIER_BREAKPOINTS` (lines 21–26)
 2. Delete `_assign_tier()` (lines 34–43)
 3. Replace `seed_rankings()` body per spec (reads `row["tier"]` + new fields)
-4. Leave everything else byte-identical
+4. Extend `add_player()` signature with six optional kwargs
+   (`bye_week`, `adp`, `projected_points`, `risk`, `upside`, `outlook`)
+   and update the constructed `new_player` dict to include them. Numeric
+   defaults are `None`, string defaults are `""`. The existing required
+   positional args (`name`, `team`, `position`, `tier`) and all internal
+   logic (insertion index, renumber loop) stay byte-identical. The
+   router callsite (`backend/routers/rankings.py:287-290`) continues to
+   pass only the 4 required positionals — the new kwargs all take their
+   defaults, so the endpoint behaves identically for the current frontend.
+5. Leave everything else byte-identical
 
 **Validation**:
 ```bash
@@ -424,8 +463,11 @@ ruff check backend/utils/rankings.py
 grep -n "_assign_tier\|TIER_BREAKPOINTS" backend/ tests/ -r
 # expected: zero matches
 ```
-- [ ] Both symbols gone from the repo
-- [ ] All other functions in `rankings.py` untouched (verify via `git diff`)
+- [ ] Both heuristic symbols gone from the repo
+- [ ] `add_player()` signature has the 6 new keyword-only args with the
+  right defaults
+- [ ] `swap_players`, `delete_player`, `set_player_tier`, `set_player_tag`,
+  all profile helpers untouched (verify via `git diff`)
 - [ ] No new imports needed (`pd.notna` lives on already-imported pandas)
 
 ---
@@ -721,6 +763,24 @@ def test_seed_no_assign_tier_symbol():
     from utils import rankings
     assert not hasattr(rankings, "_assign_tier")
     assert not hasattr(rankings, "TIER_BREAKPOINTS")
+
+
+def test_add_player_emits_full_schema(sample_profile):
+    """Manually-added players have the same 13 fields as seeded ones,
+    with optional fields defaulting to None/''."""
+    result = add_player(sample_profile, "Test Player", "FA", "QB", tier=5)
+    new_player = next(p for p in result["players"]
+                      if p["name"] == "Test Player")
+    assert new_player["bye_week"] is None
+    assert new_player["adp"] == ""
+    assert new_player["projected_points"] is None
+    assert new_player["risk"] is None
+    assert new_player["upside"] is None
+    assert new_player["outlook"] == ""
+    # Existing fields still present:
+    assert new_player["tier"] == 5
+    assert new_player["notes"] == ""
+    assert new_player["tag"] == ""
 ```
 
 `test_seed_has_tier` and `test_seed_tier_nondecreasing` continue to
@@ -736,8 +796,12 @@ init).
 ```bash
 pytest tests/test_rankings.py -v
 ```
-- [ ] All tests pass (prior 32 + 8 new = 40)
+- [ ] All tests pass (prior 32 + 8 new seeding/sanity + 1 add_player schema = 41)
 - [ ] `_assign_tier` is not importable
+- [ ] Existing `add_player` tests (`test_add_player_appended_to_tier`,
+  `test_add_player_rank_assigned`, `test_add_player_subsequent_ranks_shifted`,
+  `test_add_player_does_not_mutate_input`) continue to pass — the 6 new
+  fields are additive
 
 ---
 
@@ -785,11 +849,10 @@ pytest tests/test_profile_management.py -v
 pytest tests/ -q
 ruff check backend/ tests/
 ```
-- [ ] All tests pass.
-  Target: ~93 (82 baseline + ~6 new in `test_data_loader.py` + ~8 new
-  in `test_rankings.py`; `test_profile_management.py` unchanged in
-  count). Exact count may vary ±1; do not block on the precise number,
-  but investigate any *decrease*.
+- [ ] All tests pass. Target: **97** (82 baseline + 6 new in
+  `test_data_loader.py` + 9 new in `test_rankings.py` [8 seeding/sanity
+  + 1 add_player schema]; `test_profile_management.py` unchanged in
+  count). Investigate any *decrease* from baseline.
 - [ ] ruff clean
 
 ---
@@ -864,9 +927,9 @@ git pull origin main
 ```
 
 **Force fresh seed from new CSVs**:
-- Option A (UI): click `★ SET DEFAULT`-adjacent `RESET`. `seed.json`
-  doesn't exist in S3 (verified per PRP-017 deploy notes), so Reset
-  falls through to the CSV re-seed path.
+- Option A (UI): click Reset in the toolbar. `seed.json` doesn't exist
+  in S3 (verified per PRP-017), so Reset falls through to the CSV
+  re-seed path.
 - Option B (API):
   ```bash
   curl -X POST https://ff.jurigregg.com/api/rankings/seed \
@@ -985,8 +1048,10 @@ All resolved by the init or this PRP:
 - **`adp` numerical sort?** No — stored as string; future change if needed.
 - **ADR-011 for schema expansion?** Deferred — operator decides after
   execution (init Follow-ups).
-- **`add_player()` shape update?** Out of scope — manual-add path keeps
-  the 7-field shape (init explicitly scopes new fields to seed only).
+- **`add_player()` shape update?** Folded in (per review feedback).
+  Backend-only: signature extended with six optional kwargs defaulting
+  to `None` / `""`. Router body schema and frontend dialog unchanged in
+  this PRP — PRP-020 handles richer manual entry.
 - **`conftest.py` shared fixture update?** Not needed — no shared `sample_df`
   fixture exists; `sample_df` is local to `test_rankings.py`.
 
@@ -1024,6 +1089,13 @@ No outstanding blockers.
 4. **Verify**: `/api/rankings/QB` returns players without the 6 new
    fields, tiers from `_assign_tier()` heuristic.
 
+   Note: after `POST /seed` runs on the reverted code, the six new
+   fields (`bye_week`, `adp`, `projected_points`, `risk`, `upside`,
+   `outlook`) are gone from `s3://ff-draft-room-data/rankings/default.json`
+   entirely. Rollback restores the old shape end-to-end — the rich data
+   isn't hidden, it's overwritten. To recover the new fields after
+   rollback, roll forward again.
+
 Rollback is straightforward because the player record shape additions
 are additive — old code reading new data simply ignores the extra keys,
 and revert + reseed restores the old shape end-to-end.
@@ -1058,12 +1130,16 @@ in JSON as `7.0` instead of `7`. Pandas' nullable `Int64` keeps integer
 arithmetic and supports `pd.NA`, which `pd.notna()` in `seed_rankings`
 converts cleanly to either Python `int` or `None`.
 
-### `add_player()` doesn't emit new fields
-Out of scope per init. The 7-field "minimal" player record from
-manual-add will coexist with the 13-field seeded records. The frontend
-(and `get_position_players`) treats all extra keys as opaque, so this
-isn't a runtime concern. A future PRP can extend the AddPlayer dialog
-and `add_player()` symmetrically when the UI surfaces the new fields.
+### `add_player()` now emits the full 13-field schema
+`add_player()` now emits the full 13-field schema with optional fields
+defaulting to `None` / `""`. The current 2-field AddPlayer dialog
+continues to work unchanged; richer manual entry (UI + request body
+schema) is the subject of PRP-020.
+
+Per the operator: manual add will still be needed in-season (unsigned
+WRs landing on rosters late summer), so seeded-vs-added shape parity
+is a real consistency fix, not dead-code maintenance — it prevents
+"field not present" branches in the upcoming UI work for the new fields.
 
 ### File size
 `data_loader.py` ~75 lines (well under 500). `rankings.py` shrinks by
