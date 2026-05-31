@@ -755,6 +755,20 @@ CSS (new file):
 | Delete row color | `var(--danger)` (`#C0392B`) — defined in `App.css:13`, already used by `.btn-danger`, `.toolbar-btn-danger:hover`, `.delete-btn:hover`. Matches existing convention. |
 | Null fields in UI | Per init out-of-scope. UI doesn't render `bye_week`/`adp`/etc. yet, so null values are persisted invisibly until a future PRP surfaces them. |
 
+### Identity Preservation — Verified Against Live Code
+
+These were spot-checked before this PRP to make sure no UI identity
+silently changes:
+
+- **Tag labels** in the ContextMenu `TAGS` constant match
+  `TagPicker.jsx:5-11` exactly: `Love / Breakout / Sleeper / Risky /
+  Hurt / Avoid / Red flag`. (Note: the init mock said "Handcuff" for
+  the cross/✚ tag; the live code labels it "Hurt" — live code wins.
+  Tag rename is out of scope.)
+- **Tag icon colors** in ContextMenu.css (`heart #E03030`, `warning
+  #F0B429`, `skull #E0E0E0`, `cross #E03030`) match `TagPicker.css:36-39`
+  byte-for-byte. Visual identity preserved.
+
 ### Design Tokens (reaffirmed)
 - Background secondary: `var(--bg-secondary)`
 - Accent (Honolulu Blue): `var(--accent)` (`#0076B6`)
@@ -809,20 +823,49 @@ pytest tests/test_rankings.py -v -k add_player
 
 ---
 
-### Step 3 — Frontend: `api/rankings.js` — `addPlayer(position, body)`
+### Step 3 — Frontend: ContextMenu + delete TagPicker
+**Files**:
+- Create `frontend/src/components/ContextMenu.jsx`
+- Create `frontend/src/components/ContextMenu.css`
+- Delete `frontend/src/components/TagPicker.jsx`
+- Delete `frontend/src/components/TagPicker.css`
+
+Implement per spec. Done first so that Step 5's App.jsx rewrite can
+import a real component — no stub-then-replace dance.
+
+**Validation**:
+```bash
+grep -rn "TagPicker" frontend/src/
+# expected: matches only in App.jsx (still imports the now-deleted file;
+# fixed in Step 5)
+```
+- [ ] `ContextMenu.jsx` + `ContextMenu.css` exist
+- [ ] `TagPicker.jsx` + `TagPicker.css` deleted
+- [ ] Only remaining `TagPicker` reference is in `App.jsx` (cleaned up in Step 5)
+
+> **Build deferred** — Steps 3 through 9 each leave the tree in an
+> intermediate state where Vite would error (deleted import here,
+> renamed prop there). One full `npx vite build` runs at Step 10 once
+> all the pieces are in place. For per-step iteration, lean on the dev
+> server's HMR if it's running.
+
+---
+
+### Step 4 — Frontend: `api/rankings.js` — `addPlayer(position, body)`
 **Files**: `frontend/src/api/rankings.js`
 
 Replace the existing `addPlayer` export with the new signature.
 
 **Validation**:
 ```bash
-cd frontend && npx vite build 2>&1 | tail -10
+grep -n "addPlayer" frontend/src/api/rankings.js
+# expected: one export matching the new (position, body) signature
 ```
-- [ ] Build clean (will report unused imports / undefined identifiers if any callsite is left stale — Step 4 fixes the App.jsx callsite)
+- [ ] Signature is `addPlayer = (position, body) => …`
 
 ---
 
-### Step 4 — Frontend: `App.jsx` — handleAdd + state renames
+### Step 5 — Frontend: `App.jsx` — handleAdd + state renames
 **Files**: `frontend/src/App.jsx`
 
 Three edits:
@@ -855,17 +898,14 @@ Three edits:
 
 **Validation**:
 ```bash
-cd frontend && npx vite build 2>&1 | tail -10
+grep -rn "TagPicker\|tagPicker\|handleTagOpen" frontend/src/App.jsx
+# expected: zero matches
 ```
-- [ ] Build clean. (ContextMenu.jsx doesn't exist yet — the build will
-  fail on the import. Either create an empty stub in this step or
-  acknowledge the build will green up at Step 8. Recommend: create
-  `frontend/src/components/ContextMenu.jsx` with an `export default
-  function ContextMenu() { return null }` stub now; replace in Step 8.)
+- [ ] All TagPicker / tagPicker references in App.jsx replaced
 
 ---
 
-### Step 5 — Frontend: WarRoom — toolbar + dialog props
+### Step 6 — Frontend: WarRoom — toolbar + dialog props
 **Files**: `frontend/src/components/WarRoom.jsx`, `frontend/src/components/WarRoom.css`
 
 1. Add `+ ADD PLAYER` button + divider before `SAVE` in the toolbar.
@@ -874,13 +914,13 @@ cd frontend && npx vite build 2>&1 | tail -10
 
 **Validation**:
 ```bash
-cd frontend && npx vite build 2>&1 | tail -10
+grep -n "toolbar-btn-add\|toolbar-divider" frontend/src/components/WarRoom.jsx frontend/src/components/WarRoom.css
 ```
-- [ ] Build clean
+- [ ] Button rendered in JSX; CSS rules appended
 
 ---
 
-### Step 6 — Frontend: TierGroup + PositionColumn — drop add button
+### Step 7 — Frontend: TierGroup + PositionColumn — drop add button
 **Files**: `frontend/src/components/TierGroup.jsx`,
 `frontend/src/components/TierGroup.css`,
 `frontend/src/components/PositionColumn.jsx`
@@ -891,7 +931,6 @@ cd frontend && npx vite build 2>&1 | tail -10
 
 **Validation**:
 ```bash
-cd frontend && npx vite build 2>&1 | tail -10
 grep -rn "add-tier-btn\|onAddOpen" frontend/src/components/TierGroup.* frontend/src/components/PositionColumn.*
 # expected: zero matches
 ```
@@ -899,7 +938,7 @@ grep -rn "add-tier-btn\|onAddOpen" frontend/src/components/TierGroup.* frontend/
 
 ---
 
-### Step 7 — Frontend: PlayerRow — drop `×`, rename prop
+### Step 8 — Frontend: PlayerRow — drop `×`, rename prop
 **Files**: `frontend/src/components/PlayerRow.jsx`,
 `frontend/src/components/PlayerRow.css`
 
@@ -913,31 +952,10 @@ propagates: `TierGroup.jsx` (passes `onTagOpen` → rename to
 
 **Validation**:
 ```bash
-cd frontend && npx vite build 2>&1 | tail -10
 grep -rn "onTagOpen\|delete-btn\|onDeleteClick" frontend/src/
 # expected: zero matches
 ```
 - [ ] No traces of removed identifiers anywhere in `frontend/src/`
-
----
-
-### Step 8 — Frontend: ContextMenu + delete TagPicker
-**Files**:
-- Create `frontend/src/components/ContextMenu.jsx`
-- Create `frontend/src/components/ContextMenu.css`
-- Delete `frontend/src/components/TagPicker.jsx`
-- Delete `frontend/src/components/TagPicker.css`
-
-Implement per spec.
-
-**Validation**:
-```bash
-cd frontend && npx vite build 2>&1 | tail -10
-grep -rn "TagPicker" frontend/src/
-# expected: zero matches
-```
-- [ ] Vite build clean
-- [ ] No remaining `TagPicker` references
 
 ---
 
@@ -950,15 +968,16 @@ Implement per spec. ~110 lines JSX, ~25 lines CSS — both well under 500.
 
 **Validation**:
 ```bash
-cd frontend && npx vite build 2>&1 | tail -10
-wc -l frontend/src/components/AddPlayerDialog.jsx
+wc -l frontend/src/components/AddPlayerDialog.jsx frontend/src/components/AddPlayerDialog.css
 ```
-- [ ] Build clean
-- [ ] File size < 500 (target: ~130)
+- [ ] Both files < 500 lines (target: ~130 / ~25)
 
 ---
 
 ### Step 10 — Full validation
+First production build of the run — verifies the whole tree compiles
+together after Steps 3–9.
+
 **Validation**:
 ```bash
 source .venv/bin/activate
@@ -1081,9 +1100,12 @@ Per init §"Manual browser test checklist":
   player removed
 - [ ] `+ ADD PLAYER` opens dialog with 10 fields
 - [ ] Dialog blocks save when name / team / position / tier invalid
-- [ ] Dialog with only required fields filled: player added with
-  null/empty optionals
+- [ ] Dialog with only required fields filled: player added; verify
+  via `curl http://localhost:8000/api/rankings/<POS>` that the new
+  player has `bye_week: null`, `adp: ""`, `projected_points: null`,
+  `risk: null`, `upside: null`, `outlook: ""`
 - [ ] Dialog with all fields filled: player added with all values
+  (verify via curl as above; all 6 optional fields populated)
 - [ ] Added player appears at end of chosen tier
 - [ ] Right-click on player in Draft Mode still opens context menu
   (existing behavior — `onContextMenu` works in both modes; verify no
@@ -1113,7 +1135,7 @@ Per init §"Manual browser test checklist":
 | 15 | Browser: hover Edit ▸ → click Delete | DeleteConfirmDialog appears | ☐ |
 | 16 | Browser: confirm Delete | Player removed | ☐ |
 | 17 | Browser: + ADD PLAYER → fill all 10 fields → Add | Player added with all values | ☐ |
-| 18 | Browser: + ADD PLAYER → blank optionals → Add | Player added; check via right-click → notes or future UI for null/empty | ☐ |
+| 18 | Browser: + ADD PLAYER → blank optionals → Add. Then `curl -s http://localhost:8000/api/rankings/QB \| python -c "import json,sys; p=next(x for x in json.load(sys.stdin) if x['name']=='<new>'); print(p)"` | `bye_week: null, adp: "", projected_points: null, risk: null, upside: null, outlook: ""` | ☐ |
 | 19 | Browser: + ADD PLAYER → tier=0 → Add | Inline error shown | ☐ |
 | 20 | Browser: Draft Mode toggle still works | No regression | ☐ |
 | 21 | Browser: SAVE clears unsaved indicator | Existing behavior intact | ☐ |
