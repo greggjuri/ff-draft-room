@@ -21,6 +21,29 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `19-init-fantasy-footballers-tiered-import.md` — Fantasy Footballers tiered 2026 seed
+  - New `2026_{POS}.csv` filename pattern + 13-column tiered format
+    (was 6-column rank-only). Old `2026 {POS} Draft Rankings - …Podcast.csv`
+    files removed.
+  - Six new per-player fields persisted on every seeded record:
+    `bye_week` (int|None), `adp` (str), `projected_points` (float),
+    `risk` (float), `upside` (float), `outlook` (str). Tier sourced
+    directly from CSV — `_assign_tier()` / `TIER_BREAKPOINTS` deleted.
+  - `add_player()` extended with the same six fields as keyword-only
+    optional kwargs (None / "" defaults) so seeded and manually-added
+    records share the 13-field shape. Router callsite and AddPlayer
+    dialog unchanged; richer manual entry deferred to PRP-020.
+  - ADP read with `dtype=str` to preserve trailing zeros ("3.10" not 3.1).
+    bye_week stored as nullable Int64 → int / None in JSON.
+  - 97 tests passing (was 82): +15 in test_data_loader, +9 in
+    test_rankings, _sample_df helper in test_profile_management updated.
+  - Single atomic commit (`db7273d`). Production deploy: pull, deploy,
+    then click Reset in the toolbar (or `POST /api/rankings/seed`) to
+    force a fresh re-seed from the new CSVs.
+  - Follow-ups: PRP-020 (AddPlayer dialog + endpoint body schema to
+    surface new fields); optional ADR-011 note for the schema expansion
+    (ADR-010 already anticipates this).
+
 - [x] `18-init-untrack-rankings-and-doc-cleanup.md` — Repo hygiene
   - `git rm --cached` `data/rankings/{default,seed}.json`; rule
     activated in `.gitignore` (was commented out)
@@ -223,4 +246,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-05-12 (PRP-018 untrack rankings JSONs + doc cleanup)*
+*Last updated: 2026-05-31 (PRP-019 Fantasy Footballers tiered rankings ingestion)*
