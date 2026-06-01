@@ -3,7 +3,7 @@ import './TierGroup.css'
 
 export default function TierGroup({
   position, tierNum, players, lastRank, isDraft, getDraftStatus, onStatusClick,
-  onReorder, onNotesOpen, onAddOpen, onDeleteOpen, onTagOpen, firstRowRef,
+  onReorder, onNotesOpen, onContextMenuOpen, firstRowRef,
 }) {
   const tierClass = tierNum % 2 === 0 ? 'tier-even' : 'tier-odd'
 
@@ -27,19 +27,9 @@ export default function TierGroup({
           onMoveUp={() => onReorder(position, player.position_rank - 1, player.position_rank)}
           onMoveDown={() => onReorder(position, player.position_rank, player.position_rank + 1)}
           onNameClick={() => !isDraft && onNotesOpen(player, position)}
-          onDeleteClick={() => onDeleteOpen(player, position)}
-          onTagOpen={onTagOpen}
+          onContextMenuOpen={onContextMenuOpen}
         />
       ))}
-
-      {!isDraft && (
-        <button
-          className="add-tier-btn"
-          onClick={() => onAddOpen(position, tierNum)}
-        >
-          + {position} · Tier {tierNum}
-        </button>
-      )}
     </div>
   )
 }

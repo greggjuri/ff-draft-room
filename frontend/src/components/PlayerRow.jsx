@@ -22,7 +22,7 @@ function buildGradient(base, teamHex) {
 
 const PlayerRow = forwardRef(function PlayerRow({
   player, position, isFirst, isLast, isDraft, draftStatus, onStatusClick,
-  onMoveUp, onMoveDown, onNameClick, onDeleteClick, onTagOpen,
+  onMoveUp, onMoveDown, onNameClick, onContextMenuOpen,
 }, ref) {
   const nameLabel = player.notes ? `${player.name} 📝` : player.name
 
@@ -41,7 +41,7 @@ const PlayerRow = forwardRef(function PlayerRow({
 
   const handleContextMenu = (e) => {
     e.preventDefault()
-    onTagOpen(player, position, { x: e.clientX, y: e.clientY })
+    onContextMenuOpen(player, position, { x: e.clientX, y: e.clientY })
   }
 
   const tagIcon = player.tag && TAG_ICONS[player.tag] ? (
@@ -105,14 +105,6 @@ const PlayerRow = forwardRef(function PlayerRow({
         {tagIcon}
         <span className="player-name-text">{nameLabel}</span>
         {logoEl}
-      </button>
-
-      <button
-        className="control-btn delete-btn"
-        onClick={onDeleteClick}
-        title="Delete"
-      >
-        ×
       </button>
     </div>
   )

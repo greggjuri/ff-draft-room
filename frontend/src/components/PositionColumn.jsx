@@ -7,7 +7,7 @@ const POSITION_DEPTH = { QB: 30, RB: 50, WR: 50, TE: 30 }
 
 export default function PositionColumn({
   position, players, isDraft, getDraftStatus, onStatusClick,
-  onReorder, onNotesOpen, onAddOpen, onDeleteOpen, onTagOpen, onTierMove,
+  onReorder, onNotesOpen, onContextMenuOpen, onTierMove,
 }) {
   // Group players by tier
   const tierGroups = {}
@@ -66,9 +66,7 @@ export default function PositionColumn({
             onStatusClick={onStatusClick}
             onReorder={onReorder}
             onNotesOpen={onNotesOpen}
-            onAddOpen={onAddOpen}
-            onDeleteOpen={onDeleteOpen}
-            onTagOpen={onTagOpen}
+            onContextMenuOpen={onContextMenuOpen}
             firstRowRef={idx === 0 ? firstRowRef : undefined}
           />
         </div>

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from utils.constants import POSITIONS
 from utils.data_loader import load_player_data
@@ -79,7 +79,13 @@ class ReorderRequest(BaseModel):
 class AddPlayerRequest(BaseModel):
     name: str
     team: str
-    tier: int
+    tier: int = Field(ge=1)
+    bye_week: int | None = None
+    adp: str = ""
+    projected_points: float | None = None
+    risk: float | None = None
+    upside: float | None = None
+    outlook: str = ""
 
 
 class NotesRequest(BaseModel):
@@ -285,8 +291,17 @@ def add(
         )
 
     updated = add_player(
-        profile, body.name.strip(), body.team.strip().upper(),
-        position, body.tier,
+        profile,
+        body.name.strip(),
+        body.team.strip().upper(),
+        position,
+        body.tier,
+        bye_week=body.bye_week,
+        adp=body.adp.strip(),
+        projected_points=body.projected_points,
+        risk=body.risk,
+        upside=body.upside,
+        outlook=body.outlook,
     )
     _set_profile(updated)
     return get_position_players(updated, position)

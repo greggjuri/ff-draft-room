@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import LoginPage from './components/LoginPage'
 import WarRoom from './components/WarRoom'
-import TagPicker from './components/TagPicker'
+import ContextMenu from './components/ContextMenu'
 import {
   getPositionPlayers,
   reorderPlayers,
@@ -55,8 +55,8 @@ function AppContent() {
   const [resetDialog, setResetDialog] = useState(false)
   const [setDefaultDialog, setSetDefaultDialog] = useState(false)
 
-  // Tag picker state
-  const [tagPicker, setTagPicker] = useState(null)
+  // Context menu state (right-click on player row)
+  const [contextMenu, setContextMenu] = useState(null)
 
   // Draft mode state
   const [mode, setMode] = useState('warroom')
@@ -170,14 +170,14 @@ function AppContent() {
     }
   }
 
-  const handleTagOpen = (player, position, coords) => {
-    setTagPicker({ player, position, coords })
+  const handleContextMenuOpen = (player, position, coords) => {
+    setContextMenu({ player, position, coords })
   }
 
   const handleTagSelect = async (tag) => {
-    if (!tagPicker) return
-    const { player, position } = tagPicker
-    setTagPicker(null)
+    if (!contextMenu) return
+    const { player, position } = contextMenu
+    setContextMenu(null)
     try {
       await setPlayerTag(position, player.position_rank, tag)
       const updated = await getPositionPlayers(position)
@@ -188,8 +188,8 @@ function AppContent() {
     }
   }
 
-  const handleAdd = async (position, name, team, tier) => {
-    const updated = await addPlayer(position, name, team, tier)
+  const handleAdd = async (position, body) => {
+    const updated = await addPlayer(position, body)
     setRankings(prev => ({ ...prev, [position]: updated }))
     setDirty(true)
     setAddDialog(null)
@@ -314,7 +314,7 @@ function AppContent() {
         onSelectResult={handleSelectResult}
         onReorder={handleReorder}
         onTierMove={handleTierMove}
-        onTagOpen={handleTagOpen}
+        onContextMenuOpen={handleContextMenuOpen}
         onSave={handleSave}
         onSaveAsOpen={() => setSaveAsDialog(true)}
         onLoadOpen={() => setLoadDialog(true)}
@@ -325,11 +325,10 @@ function AppContent() {
         onNotesClose={() => setNotesDialog(null)}
         onNotesUpdate={handleNotesUpdate}
         addDialog={addDialog}
-        onAddOpen={(position, tier) => setAddDialog({ position, tier })}
+        onAddOpen={() => setAddDialog(true)}
         onAddClose={() => setAddDialog(null)}
         onAdd={handleAdd}
         deleteDialog={deleteDialog}
-        onDeleteOpen={(player, position) => setDeleteDialog({ player, position })}
         onDeleteClose={() => setDeleteDialog(null)}
         onDelete={handleDelete}
         saveAsDialog={saveAsDialog}
@@ -348,12 +347,17 @@ function AppContent() {
         onSetDefault={handleSetDefault}
         onSetDefaultClose={() => setSetDefaultDialog(false)}
       />
-      {tagPicker && (
-        <TagPicker
-          activeTag={tagPicker.player.tag ?? ''}
-          position={tagPicker.coords}
-          onSelect={handleTagSelect}
-          onClose={() => setTagPicker(null)}
+      {contextMenu && (
+        <ContextMenu
+          activeTag={contextMenu.player.tag ?? ''}
+          position={contextMenu.coords}
+          onTagSelect={handleTagSelect}
+          onDelete={() => {
+            const { player, position } = contextMenu
+            setContextMenu(null)
+            setDeleteDialog({ player, position })
+          }}
+          onClose={() => setContextMenu(null)}
         />
       )}
     </>

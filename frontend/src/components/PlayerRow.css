@@ -1,6 +1,6 @@
 .player-row {
   display: grid;
-  grid-template-columns: 24px 24px 24px 1fr 24px;
+  grid-template-columns: 24px 24px 24px 1fr;
   align-items: center;
   gap: 3px;
   margin-bottom: 3px;
@@ -81,13 +81,6 @@
 }
 .control-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .control-btn:disabled { opacity: 0.25; cursor: default; }
-
-.delete-btn {
-  color: var(--text-muted);
-  border-color: transparent;
-  background: transparent;
-}
-.delete-btn:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }
 
 .player-rank {
   color: var(--text-muted);

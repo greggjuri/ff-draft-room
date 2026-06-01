@@ -288,6 +288,26 @@ def test_add_player_does_not_mutate_input(sample_profile):
     assert sample_profile == original
 
 
+def test_add_player_full_kwargs(sample_profile):
+    """Caller supplying all 6 optional kwargs round-trips correctly."""
+    result = add_player(
+        sample_profile, "Test", "FA", "QB", tier=3,
+        bye_week=9, adp="12.05", projected_points=250.0,
+        risk=4.5, upside=8.0, outlook="Some blurb.",
+    )
+    new_player = next(p for p in result["players"] if p["name"] == "Test")
+    assert new_player["bye_week"] == 9
+    assert new_player["adp"] == "12.05"
+    assert new_player["projected_points"] == 250.0
+    assert new_player["risk"] == 4.5
+    assert new_player["upside"] == 8.0
+    assert new_player["outlook"] == "Some blurb."
+    # Sanity on positional args:
+    assert new_player["tier"] == 3
+    assert new_player["team"] == "FA"
+    assert new_player["position"] == "QB"
+
+
 # ---------------------------------------------------------------------------
 # Delete player tests
 # ---------------------------------------------------------------------------

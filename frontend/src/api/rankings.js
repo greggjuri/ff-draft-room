@@ -31,10 +31,10 @@ export const reorderPlayers = (position, rank_a, rank_b) =>
     body: JSON.stringify({ rank_a, rank_b })
   })
 
-export const addPlayer = (position, name, team, tier) =>
+export const addPlayer = (position, body) =>
   request(`${BASE}/${position}/add`, {
     method: 'POST',
-    body: JSON.stringify({ name, team, tier })
+    body: JSON.stringify(body)
   })
 
 export const deletePlayer = (position, rank) =>

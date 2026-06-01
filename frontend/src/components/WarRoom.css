@@ -80,6 +80,22 @@
   color: var(--danger);
 }
 
+.toolbar-btn-add {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.toolbar-btn-add:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.toolbar-divider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 2px 4px;
+}
+
 .mode-toggle {
   display: flex;
   border: 1px solid var(--border);

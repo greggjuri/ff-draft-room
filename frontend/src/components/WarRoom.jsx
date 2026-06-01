@@ -19,11 +19,11 @@ export default function WarRoom({
   getDraftStatus, onStatusClick, onEnterDraft, onExitDraft,
   exitDraftDialog, onConfirmExitDraft, onCancelExitDraft,
   searchQuery, onSearchChange, searchResults, onSelectResult,
-  onReorder, onTierMove, onTagOpen, onSave,
+  onReorder, onTierMove, onContextMenuOpen, onSave,
   onSaveAsOpen, onLoadOpen, onResetOpen, onSetDefaultOpen,
   notesDialog, onNotesOpen, onNotesClose, onNotesUpdate,
   addDialog, onAddOpen, onAddClose, onAdd,
-  deleteDialog, onDeleteOpen, onDeleteClose, onDelete,
+  deleteDialog, onDeleteClose, onDelete,
   saveAsDialog, onSaveAs, onSaveAsClose,
   loadDialog, onLoad, onLoadClose, activeProfile, onProfileRenamed, onProfileDeleted,
   resetDialog, onReset, onResetClose,
@@ -75,6 +75,8 @@ export default function WarRoom({
               {dirty && <span className="unsaved-indicator">● UNSAVED</span>}
             </div>
             <div className="toolbar">
+              <button className="toolbar-btn toolbar-btn-add" onClick={onAddOpen}>+ ADD PLAYER</button>
+              <div className="toolbar-divider" />
               <button className="save-button" onClick={onSave}>SAVE</button>
               <button className="toolbar-btn" onClick={onSaveAsOpen}>SAVE AS</button>
               <button className="toolbar-btn" onClick={onLoadOpen}>LOAD</button>
@@ -97,9 +99,7 @@ export default function WarRoom({
             onReorder={onReorder}
             onTierMove={onTierMove}
             onNotesOpen={onNotesOpen}
-            onAddOpen={onAddOpen}
-            onDeleteOpen={onDeleteOpen}
-            onTagOpen={onTagOpen}
+            onContextMenuOpen={onContextMenuOpen}
           />
         ))}
       </div>
@@ -117,8 +117,6 @@ export default function WarRoom({
       {addDialog && (
         <AddPlayerDialog
           isOpen={true}
-          position={addDialog.position}
-          tier={addDialog.tier}
           onAdd={onAdd}
           onClose={onAddClose}
         />
