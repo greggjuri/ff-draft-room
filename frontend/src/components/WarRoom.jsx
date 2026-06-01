@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import PositionColumn from './PositionColumn'
 import RosterPanel from './RosterPanel'
-import NotesDialog from './NotesDialog'
+import PlayerDetailDialog from './PlayerDetailDialog'
 import AddPlayerDialog from './AddPlayerDialog'
 import DeleteConfirmDialog from './DeleteConfirmDialog'
 import SaveAsDialog from './SaveAsDialog'
@@ -105,10 +105,9 @@ export default function WarRoom({
       </div>
 
       {notesDialog && (
-        <NotesDialog
+        <PlayerDetailDialog
           isOpen={true}
           player={notesDialog.player}
-          position={notesDialog.position}
           onSave={(notes) => onNotesUpdate(notesDialog.position, notesDialog.player.position_rank, notes)}
           onClose={onNotesClose}
         />

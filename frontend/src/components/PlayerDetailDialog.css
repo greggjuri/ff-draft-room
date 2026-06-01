@@ -1,0 +1,99 @@
+.player-detail-dialog {
+  /* Override the App.css `dialog { min-width: 320px }` default */
+  min-width: 720px;
+  max-width: 90vw;
+  max-height: 80vh;
+  padding: 0;             /* header + body manage their own padding */
+  display: flex;          /* dialog is one column: header on top, body fills */
+  flex-direction: column;
+  overflow: hidden;       /* dialog itself never scrolls; panels do */
+}
+
+.pdd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.pdd-title { letter-spacing: 0.5px; }
+
+.pdd-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.pdd-close:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
+
+.pdd-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1 1 auto;
+  min-height: 0;          /* required for nested overflow:auto to work */
+}
+
+.pdd-left, .pdd-right {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pdd-left {
+  border-right: 1px solid var(--border);
+}
+
+.pdd-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.pdd-outlook {
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;  /* preserve paragraph breaks if any */
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.pdd-outlook-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 12px;
+}
+
+.pdd-notes {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;       /* override App.css's .dialog-textarea margin if any */
+}
+
+.pdd-buttons {
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+.pdd-buttons button { flex: 0 0 auto; padding: 6px 18px; }
+
+/* Narrow viewports — stack vertically */
+@media (max-width: 700px) {
+  .player-detail-dialog {
+    min-width: 0;
+    width: 92vw;
+  }
+  .pdd-body {
+    grid-template-columns: 1fr;
+  }
+  .pdd-left {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
