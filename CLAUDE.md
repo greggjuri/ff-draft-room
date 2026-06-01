@@ -67,9 +67,9 @@ Open `localhost:5173` in browser.
 
 ### Production Deploy (on EC2)
 ```bash
-git pull origin main
 ./scripts/deploy.sh
 ```
+`deploy.sh` runs `git pull origin main` itself — no manual pull needed.
 
 ### First-Time AWS Infrastructure Setup (from Debian machine)
 ```bash
