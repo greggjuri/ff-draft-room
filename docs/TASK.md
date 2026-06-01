@@ -21,6 +21,27 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `21-init-player-detail-dialog.md` — PlayerDetailDialog (outlook + notes split panel)
+  - Replaced NotesDialog (single-textarea modal) with a two-panel
+    PlayerDetailDialog. Surfaces the per-player data that PRP-019 has
+    been storing since the tiered ingest landed.
+  - Left panel: metadata strip (`Proj X · ADP Y · Bye N`, with each
+    segment omitted when null/empty) + full outlook prose, scrolls
+    within bounds.
+  - Right panel: existing notes textarea + Save/Close, behaviour
+    verbatim (no dirty-state warning — wasn't one before, didn't add
+    one).
+  - Header now reads `📋 {name} · {position} · {team}` (position pill
+    added between name and team).
+  - Narrow viewports (<700px) stack the panels vertically.
+  - `risk` / `upside` intentionally remain hidden in the UI per
+    operator preference; war room rows stay tight.
+  - Pure frontend change: no backend, no API, no tests touched
+    (98 passing baseline preserved).
+  - Single atomic commit (`eea7f08`).
+  - Follow-ups: future surfacing of risk/upside if operator changes
+    mind; future demo site (init-22 backlog).
+
 - [x] `20-init-add-delete-ux-overhaul.md` — Add/Delete UX overhaul
   - Toolbar gains a single `+ ADD PLAYER` button (leftmost, divider
     before SAVE); 32 per-tier `+ {POSITION} · Tier N` strips removed.
@@ -270,4 +291,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-05-31 (PRP-020 add/delete UX overhaul)*
+*Last updated: 2026-06-01 (PRP-021 PlayerDetailDialog split panel)*
