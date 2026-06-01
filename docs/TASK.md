@@ -21,6 +21,30 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `20-init-add-delete-ux-overhaul.md` — Add/Delete UX overhaul
+  - Toolbar gains a single `+ ADD PLAYER` button (leftmost, divider
+    before SAVE); 32 per-tier `+ {POSITION} · Tier N` strips removed.
+  - AddPlayerDialog expanded 2 → 10 fields (Name, Team, Position
+    dropdown, Tier, plus optional bye_week / adp / projected_points /
+    risk / upside / outlook). Blank optionals submit as null / "".
+  - Right-click context menu restructured: TagPicker.jsx (7-icon
+    horizontal strip) → ContextMenu.jsx (2-item parent menu with
+    Tags ▸ / Edit ▸ submenus). Submenus open on hover (desktop) or
+    click (touch via `@media (pointer: coarse)`).
+  - Always-visible `×` delete button on every player row removed;
+    delete now lives under Edit ▸ Delete (red, `var(--danger)`),
+    invoking the existing `DeleteConfirmDialog`.
+  - Backend: `AddPlayerRequest` gains 6 optional fields + `Field(ge=1)`
+    on tier (422 for tier=0); handler passes the new fields as kwargs
+    to `add_player()` (already extended in PRP-019).
+  - 98 tests passing (+1 `test_add_player_full_kwargs` for full
+    kwargs round-trip). Manual browser verification deferred to
+    operator post-deploy.
+  - Single atomic commit (`2bff86c`).
+  - Follow-ups: future Edit-submenu additions (Rename, Move to tier,
+    Set notes); future UI to actually surface the new fields in the
+    war room rows.
+
 - [x] `19-init-fantasy-footballers-tiered-import.md` — Fantasy Footballers tiered 2026 seed
   - New `2026_{POS}.csv` filename pattern + 13-column tiered format
     (was 6-column rank-only). Old `2026 {POS} Draft Rankings - …Podcast.csv`
@@ -246,4 +270,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-05-31 (PRP-019 Fantasy Footballers tiered rankings ingestion)*
+*Last updated: 2026-05-31 (PRP-020 add/delete UX overhaul)*
