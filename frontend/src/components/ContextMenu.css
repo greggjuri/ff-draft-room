@@ -11,17 +11,31 @@
   font-size: 12px;
 }
 
+.cm-item-wrapper {
+  position: relative;     /* anchor for absolutely-positioned submenu */
+}
+
 .cm-item {
-  position: relative;
+  /* Reset native <button> styling first */
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-family: var(--font);
+  font-size: 12px;
+  /* Existing layout */
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   padding: 6px 10px;
   cursor: pointer;
   border-radius: 4px;
   color: var(--text-primary);
+  text-align: left;
 }
 .cm-item:hover { background: rgba(255, 255, 255, 0.06); }
+.cm-item.open  { background: rgba(255, 255, 255, 0.06); }
+.cm-item:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
 
 .cm-arrow { color: var(--text-muted); font-size: 10px; }
 
@@ -39,15 +53,8 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* Desktop: hover opens submenu */
-@media (pointer: fine) {
-  .cm-item:hover > .cm-submenu { display: block; }
-}
-
-/* Touch: open via JS class only */
-@media (pointer: coarse) {
-  .cm-item.open > .cm-submenu { display: block; }
-}
+/* Single rule, click-driven via React state. No media queries. */
+.cm-item-wrapper.open > .cm-submenu { display: block; }
 
 .cm-tag-row, .cm-edit-row {
   display: flex;

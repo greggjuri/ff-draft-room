@@ -15,7 +15,7 @@ export default function ContextMenu({
   activeTag, position, onTagSelect, onDelete, onClose,
 }) {
   const ref = useRef(null)
-  const [openSub, setOpenSub] = useState(null)
+  const [openSubmenu, setOpenSubmenu] = useState(null)  // null | 'tags' | 'edit'
 
   useEffect(() => {
     function handleClick(e) {
@@ -38,22 +38,34 @@ export default function ContextMenu({
     onTagSelect(newTag)
   }
 
-  const toggleSub = (k) => (e) => {
+  const toggleSubmenu = (k) => (e) => {
     e.stopPropagation()
-    setOpenSub(prev => prev === k ? null : k)
+    setOpenSubmenu(prev => prev === k ? null : k)
+  }
+
+  const renderParent = (key, label) => {
+    const isOpen = openSubmenu === key
+    return (
+      <button
+        type="button"
+        className={`cm-item ${isOpen ? 'open' : ''}`}
+        onClick={toggleSubmenu(key)}
+      >
+        <span>{label}</span>
+        <span className="cm-arrow">{isOpen ? '▾' : '▸'}</span>
+      </button>
+    )
   }
 
   return (
     <div ref={ref} className="context-menu" style={{ left: x, top: y }}>
-      <div
-        className={`cm-item ${openSub === 'tags' ? 'open' : ''}`}
-        onClick={toggleSub('tags')}
-      >
-        <span>Tags</span><span className="cm-arrow">▸</span>
+      <div className={`cm-item-wrapper ${openSubmenu === 'tags' ? 'open' : ''}`}>
+        {renderParent('tags', 'Tags')}
         <div className="cm-submenu cm-submenu-tags">
           {TAGS.map(t => (
             <button
               key={t.key}
+              type="button"
               className={`cm-tag-row ${activeTag === t.key ? 'active' : ''}`}
               onClick={(e) => { e.stopPropagation(); handleTagClick(t.key) }}
             >
@@ -64,13 +76,11 @@ export default function ContextMenu({
         </div>
       </div>
 
-      <div
-        className={`cm-item ${openSub === 'edit' ? 'open' : ''}`}
-        onClick={toggleSub('edit')}
-      >
-        <span>Edit</span><span className="cm-arrow">▸</span>
+      <div className={`cm-item-wrapper ${openSubmenu === 'edit' ? 'open' : ''}`}>
+        {renderParent('edit', 'Edit')}
         <div className="cm-submenu cm-submenu-edit">
           <button
+            type="button"
             className="cm-edit-row cm-delete"
             onClick={(e) => { e.stopPropagation(); onDelete() }}
           >
