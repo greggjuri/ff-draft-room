@@ -21,6 +21,24 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `22-init-player-detail-in-draft-mode.md` — PlayerDetailDialog in Draft Mode
+  - Wired the click handler PRP-021 left disconnected on the Draft
+    Mode branch of `PlayerRow.jsx`. Clicking a player name in Draft
+    Mode now opens the dialog — most valuable mid-pick when comparing
+    two or three players with the clock running.
+  - Two surgical edits: `PlayerRow.jsx:73` adds `onClick={onNameClick}`
+    on the Draft name span (matches the War Room branch byte-for-byte);
+    `TierGroup.jsx:29` drops the `!isDraft &&` short-circuit so the
+    callback actually invokes `onNotesOpen`.
+  - Status dot still cycles (distinct CSS grid cell, no collision);
+    right-click context menu (PRP-020) still works; notes save round-
+    trips identically to War Room mode.
+  - Pure frontend: no backend, no API, no tests touched (98 passing
+    baseline preserved).
+  - Single atomic commit (`a94d589`).
+  - Follow-ups: optional auto-close-on-status-dot-click and compact
+    dialog variant — defer until real draft use surfaces the need.
+
 - [x] `21-init-player-detail-dialog.md` — PlayerDetailDialog (outlook + notes split panel)
   - Replaced NotesDialog (single-textarea modal) with a two-panel
     PlayerDetailDialog. Surfaces the per-player data that PRP-019 has
@@ -291,4 +309,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-06-01 (PRP-021 PlayerDetailDialog split panel)*
+*Last updated: 2026-06-01 (PRP-022 PlayerDetailDialog in Draft Mode)*
