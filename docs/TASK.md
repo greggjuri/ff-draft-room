@@ -21,6 +21,31 @@ _Empty — all items complete or dropped_
 
 ## Recently Completed
 
+- [x] `23-init-context-menu-click-to-open.md` — Context menu submenus open on click
+  - Fixed the PRP-020 hover-fragility bug where the cursor crossing
+    the gap from a parent item to its submenu caused the submenu to
+    snap shut. Especially painful for Edit ▸ Delete.
+  - Pleasant finding: PRP-020 already wired `openSub` state,
+    `toggleSub` handler, and the `.open` class — the hover behaviour
+    was 100% CSS-driven via `@media (pointer: fine)`. Removing one
+    CSS block + unwrapping the touch wrapper collapsed everything to
+    one state-driven rule.
+  - Rider enhancements (same two files): `openSub` → `openSubmenu`
+    rename; arrow rotation `▸` → `▾` when open; `<div>` parents → 
+    `<button type="button">` for free Enter/Space activation + correct
+    ARIA role + `:focus-visible` ring. Each parent + its submenu now
+    sit in a `.cm-item-wrapper` div (because `<button>` can't validly
+    contain absolutely-positioned descendants).
+  - Pure frontend: no backend, no API, no tests touched (98 passing
+    baseline preserved).
+  - Single atomic commit (`aa2c741`).
+  - Follow-ups: keyboard arrow-key submenu navigation (still deferred);
+    eventual Edit submenu additions (Rename, Move to tier).
+  - **Pre-existing cleanup parked**: 24 legacy `{POS}_{YEAR}.csv`
+    deletions sit unstaged in the working tree (per ADR-010's
+    "separate cleanup change after first live draft" plan). Operator
+    should commit those separately when ready.
+
 - [x] `22-init-player-detail-in-draft-mode.md` — PlayerDetailDialog in Draft Mode
   - Wired the click handler PRP-021 left disconnected on the Draft
     Mode branch of `PlayerRow.jsx`. Clicking a player name in Draft
@@ -309,4 +334,4 @@ data/players/TE_2020.csv  through  TE_2025.csv
 
 ---
 
-*Last updated: 2026-06-01 (PRP-022 PlayerDetailDialog in Draft Mode)*
+*Last updated: 2026-06-01 (PRP-023 context menu click-to-open submenus)*
