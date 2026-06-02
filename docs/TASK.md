@@ -17,6 +17,17 @@ _Empty — all items complete or dropped_
 - [ ] Best available board
 - [ ] My roster view, needs tracker, scarcity alerts
 
+### Someday / Maybe
+- [ ] Public read-only demo site at `ffdemo.jurigregg.com`
+  - Static snapshot of THE BOARD in War Room mode, no auth, no edits.
+    LoginPage gets a "View public demo →" link/button.
+  - Architecture decided: Option A from the design discussion —
+    manual publish script copies `default.json` from S3 to a static
+    location, demo frontend reads from there. No backend involvement.
+  - Strip notes on publish (private), keep tags (visual signal).
+  - Deferred multiple times during Phase 1d in favor of higher-value
+    work. Genuine "would be nice" item; not committed to a season.
+
 ---
 
 ## Recently Completed
