@@ -145,10 +145,13 @@ ff-draft-room/
 │           ├── WarRoom.jsx / .css
 │           ├── PositionColumn.jsx / .css
 │           ├── TierGroup.jsx / .css
+│           ├── TierSeparator.jsx / .css       # Draggable tier boundaries (ADR-009)
 │           ├── PlayerRow.jsx / .css
 │           ├── SearchBar.jsx / .css
-│           ├── NotesDialog.jsx
-│           ├── AddPlayerDialog.jsx
+│           ├── RosterPanel.jsx / .css         # Draft-mode bottom drawer
+│           ├── PlayerDetailDialog.jsx / .css  # Outlook + notes split panel (PRP-021)
+│           ├── ContextMenu.jsx / .css         # Right-click: Tags ▸ / Edit ▸ (PRP-020)
+│           ├── AddPlayerDialog.jsx / .css     # 10-field add (PRP-020)
 │           ├── DeleteConfirmDialog.jsx
 │           ├── SaveAsDialog.jsx
 │           ├── LoadDialog.jsx
@@ -167,11 +170,12 @@ ff-draft-room/
 │   └── ff-draft-room.service    # systemd unit file
 └── tests/
     ├── conftest.py              # storage fixture (LocalStorage)
-    ├── test_data_loader.py      ✅ 8 passing
-    ├── test_rankings.py         ✅ 27 passing
-    ├── test_profile_management.py ✅ 14 passing
-    ├── test_storage.py          ✅ passing
-    └── test_vor.py              # Future
+    ├── test_data_loader.py      ✅ 15 passing
+    ├── test_rankings.py         ✅ 47 passing
+    ├── test_profile_management.py ✅ 21 passing
+    ├── test_storage.py          ✅ 15 passing
+    └── test_vor.py              # 1 skipped placeholder
+    # Total: 98 passing, 1 skipped
 ```
 
 ## API Routes
@@ -186,15 +190,31 @@ POST   /api/rankings/save-as         { name }     (auth required)
 POST   /api/rankings/load            { name }     (auth required)
 POST   /api/rankings/set-default                  (auth required)
 POST   /api/rankings/reset                        (auth required)
+POST   /api/rankings/rename          { name,     (auth required)
+                                       new_name }
+DELETE /api/rankings/profile/{name}               (auth required)
 GET    /api/rankings/{position}                   (auth required)
 POST   /api/rankings/{position}/reorder           (auth required)
 POST   /api/rankings/{position}/add               (auth required)
 DELETE /api/rankings/{position}/{rank}            (auth required)
+PUT    /api/rankings/{position}/{rank}/tier       (auth required)
+PUT    /api/rankings/{position}/{rank}/tag        (auth required)
 PUT    /api/rankings/{position}/{rank}/notes      (auth required)
 ```
 
-**Critical**: named routes (`/profiles`, `/save-as`, `/load`, etc.) must be
-registered BEFORE `/{position}` to avoid FastAPI matching them as path params.
+**Critical**: named routes (`/profiles`, `/save-as`, `/load`, `/rename`,
+`/profile/{name}`, etc.) must be registered BEFORE `/{position}` to avoid
+FastAPI matching them as path params.
+
+**Player record shape** (13 fields, since PRP-019/020 — see ADR-011):
+```
+position_rank, name, team, position, tier,
+bye_week (int|null), adp (str), projected_points (float|null),
+risk (float|null), upside (float|null), outlook (str),
+notes (str), tag (str)
+```
+Seeded and manually-added records share this shape. `risk`/`upside`
+captured but currently not surfaced in UI.
 
 ## War Room UI Behaviour
 
@@ -202,10 +222,17 @@ registered BEFORE `/{position}` to avoid FastAPI matching them as path params.
 - **4 columns**: QB | RB | WR | TE — all visible simultaneously
 - **Tier groups**: players grouped with alternating backgrounds (odd `#1A3A5C`, even `#2A5A8C`)
 - **▲▼**: free reorder; crossing tier boundary auto-reassigns player's tier
-- **Click player name**: notes dialog (pre-filled, Save/Close)
-- **[+ Position · Tier N]**: add player dialog (name + team, placed at tier end)
-- **[×]**: delete confirm dialog before removal
-- **Toolbar**: SAVE · SAVE AS · LOAD · RESET · ★ SET DEFAULT
+- **Tier separator drag**: drag the divider between two tiers to move
+  one player across (ADR-009)
+- **Click player name**: PlayerDetailDialog opens — left panel shows
+  metadata strip (Proj · ADP · Bye) + outlook blurb; right panel
+  is the notes textarea + Save/Close (PRP-021)
+- **Right-click player name**: ContextMenu with `Tags ▸` (7 tags) and
+  `Edit ▸` (Delete) submenus, hover-to-open on desktop (PRP-020)
+- **Toolbar**: `+ ADD PLAYER` · SAVE · SAVE AS · LOAD · RESET · ★ SET DEFAULT
+  - `+ ADD PLAYER` opens a 10-field dialog (Name / Team / Position /
+    Tier required; Bye Week / ADP / Projected / Risk / Upside / Outlook
+    optional). Blank optionals submit as null / "" (PRP-020).
 - **Unsaved indicator**: shown after any change, cleared on save
 - **Player depth**: QB 30 / RB 50 / WR 50 / TE 30
 - **Profile name**: shown in header, updates after Save As / Load
@@ -221,11 +248,17 @@ registered BEFORE `/{position}` to avoid FastAPI matching them as path params.
 ## Draft Mode
 
 - **Toggle**: `WAR ROOM | DRAFT` button in sticky header
-- **Draft mode hides**: ▲▼, ×, add buttons, save toolbar
+- **Draft mode hides**: ▲▼ reorder buttons, tier separators, toolbar
 - **Status dot**: click to cycle undrafted → mine → other
   - `mine` → green dot (`#00C805`), dark green name box (`#1A7A3A`)
   - `other` → purple dot (`#9B59B6`), vivid purple name box (`#6B2FA0`)
-- **In-memory only**: never sent to backend, wiped on exit
+- **Click player name**: opens PlayerDetailDialog (PRP-022 — same dialog
+  as War Room, mode-agnostic, notes save persists to S3)
+- **Right-click player name**: same ContextMenu as War Room
+- **Roster panel**: bottom drawer (toggle via handle bar) — live counts
+  by position, color-coded sections, slide animation
+- **In-memory pick state**: dot status never sent to backend, wiped on
+  exit (notes/tags persist; pick state is ephemeral)
 - **Exit confirm**: dialog if any picks are marked
 
 ## Search

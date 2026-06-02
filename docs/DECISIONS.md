@@ -357,6 +357,96 @@ sole seed data source.
 
 ---
 
+## ADR-011: 13-Field Player Schema — Tiered Ingest + Manual-Add Parity
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Anticipated by**: ADR-010
+
+### Context
+ADR-010 cut over to the Fantasy Footballers Podcast 2026 consensus
+rankings as the seed source. At the time, those rankings shipped in
+a rank-only format (`Name, Team, Rank`), and tier assignment was done
+in code via the temporary `_assign_tier()` heuristic. ADR-010
+explicitly anticipated a follow-up: *"Fantasy Footballers will publish
+a tiered version of these rankings in roughly 1.5 weeks. A follow-up
+re-seed will pick up their tier assignments and replace the
+`_assign_tier()` heuristic."*
+
+Fantasy Footballers shipped the tiered file with substantially more
+data per player. PRP-019 ingested it; PRP-020 made the manual-add
+path schema-consistent with the seed path. This ADR captures the
+resulting data model and the principle behind it.
+
+### Decision
+Every player record carries 13 fields. Seeded records and manually-
+added records share the same shape exactly.
+
+```
+position_rank: int           # 1-indexed within position
+name:          str
+team:          str           # "" for free agents
+position:      str           # one of POSITIONS
+tier:          int           # from CSV (no heuristic), 1-indexed
+bye_week:      int | null    # null for unsigned/uncertain players
+adp:           str           # "" when missing; preserves "3.10" vs "3.1"
+projected_points: float | null
+risk:          float | null  # 0–10 from CSV; null for manually-added
+upside:        float | null  # 0–10 from CSV; null for manually-added
+outlook:       str           # full analyst blurb; "" for manually-added
+notes:         str           # user-owned
+tag:           str           # user-owned, one of "" + 7 tag keys
+```
+
+Tier comes from the CSV column directly. `_assign_tier()` and
+`TIER_BREAKPOINTS` were deleted in PRP-019.
+
+### Rationale
+- **Right signal for tiers.** Fantasy Footballers' expert tier
+  assignments are purpose-built for draft cheat sheets; a code
+  heuristic was always scaffolding.
+- **Manual-add parity matters.** PRP-020 extended `add_player()` with
+  the same 6 optional kwargs (`bye_week`, `adp`, `projected_points`,
+  `risk`, `upside`, `outlook`) defaulting to `None` / `""`. Without
+  this, future UI work would need "field not present" branches
+  everywhere — a recurring source of bugs.
+- **`null` for unknown, not `0.0`.** Numeric defaults are `null`, not
+  `0.0`. Zero looks like a real low projection; `null` correctly
+  signals "unknown."
+- **ADP as string.** ADP format `RR.PP` (round.pick) treats `3.10`
+  and `3.1` as distinct draft positions. Reading ADP as float would
+  silently drop trailing zeros — corruption disguised as parsing.
+- **Additive expansion is safe.** Old code reading new data ignores
+  the extra keys. PRP-021 surfaced these fields in
+  `PlayerDetailDialog` without backend or storage changes.
+
+### Consequences
+- `data_loader.py` reads 10 of the 13 CSV columns (drops `Position`
+  duplicate, `Dynasty` paywall stub, `Markers` HTML artifact).
+  `bye_week` uses pandas nullable `Int64`; `adp` uses `dtype=str`.
+- `risk` and `upside` are captured and persisted but currently not
+  surfaced in the UI (operator preference — can be wired up later
+  without a schema change).
+- Schema growth has a precedent: this is the second major expansion
+  after the initial 5-field shape. Any future expansion should:
+  (1) extend both the seed path *and* `add_player()` symmetrically;
+  (2) default optionals to `null` / `""`, not `0` / `0.0`;
+  (3) ride along in the API response without route changes;
+  (4) get a brief ADR-style note here.
+- No migration path needed for past rankings JSONs: extra keys are
+  additive, missing keys default cleanly. Operators force a re-seed
+  via `POST /api/rankings/seed` (or the UI Reset button) when they
+  want the new fields populated on existing profiles.
+
+### Related
+- ADR-010 — Fantasy Footballers as Seed Source (anticipated this)
+- PRP-019 — Tiered ingest implementation
+- PRP-020 — Manual-add parity implementation
+- PRP-021 — First UI surfacing (`PlayerDetailDialog`)
+- PRP-022 — Same dialog in Draft Mode
+
+---
+
 ## Template for New Decisions
 
 ```markdown

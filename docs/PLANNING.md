@@ -10,7 +10,8 @@ during a live draft.
 Runs locally on MacBook Air M1 for development. Deployed to AWS EC2 at
 `ff.jurigregg.com` for access from any device on draft day.
 
-Historical FantasyPros data (2020–2025) seeds the initial rankings baseline.
+Fantasy Footballers Podcast 2026 expert consensus rankings (ADR-010,
+tiered ingest per PRP-019) seed the initial rankings baseline.
 It is infrastructure, not UI.
 
 ## Architecture Overview
@@ -46,8 +47,9 @@ It is infrastructure, not UI.
           ┌───────────────┴───────────────┐
           ▼                               ▼
 ┌─────────────────────┐     ┌─────────────────────────┐
-│  data/players/*.csv │     │  data/rankings/*.json   │
-│  (seed source only) │     │  LocalStorage (dev)     │
+│  data/players/      │     │  data/rankings/*.json   │
+│  2026_{POS}.csv     │     │  LocalStorage (dev)     │
+│  (FF Podcast seed)  │     │  gitignored runtime     │
 └─────────────────────┘     └─────────────────────────┘
 ```
 
@@ -132,7 +134,7 @@ Selected by `STORAGE_BACKEND` env var at startup. All 49+ tests run against
 
 ## API Design
 
-### Rankings endpoints (14 total)
+### Rankings endpoints (17 total)
 ```
 GET    /health                                → health check (unauthed)
 GET    /api/rankings                          → load current profile
@@ -144,11 +146,15 @@ POST   /api/rankings/save-as                  → save as named profile
 POST   /api/rankings/load                     → load a named profile
 POST   /api/rankings/set-default              → set seed.json baseline
 POST   /api/rankings/reset                    → reset to baseline or CSV
+POST   /api/rankings/rename                   → rename a saved profile
+DELETE /api/rankings/profile/{name}           → delete a saved profile
 
 GET    /api/rankings/{position}               → players for one position
 POST   /api/rankings/{position}/reorder       → swap two players (▲▼)
-POST   /api/rankings/{position}/add           → add a new player
+POST   /api/rankings/{position}/add           → add a new player (10 fields)
 DELETE /api/rankings/{position}/{rank}        → delete a player
+PUT    /api/rankings/{position}/{rank}/tier   → reassign player tier
+PUT    /api/rankings/{position}/{rank}/tag    → set/clear player tag
 PUT    /api/rankings/{position}/{rank}/notes  → update player notes
 ```
 
@@ -160,22 +166,35 @@ All `/api/*` endpoints require Cognito JWT in production.
 // POST /api/rankings/{position}/reorder
 { "rank_a": 2, "rank_b": 3 }
 
-// POST /api/rankings/{position}/add
-{ "name": "Josh Allen", "team": "BUF", "tier": 1 }
+// POST /api/rankings/{position}/add  (required: name/team/tier; rest optional, null/"" defaults)
+{ "name": "Josh Allen", "team": "BUF", "tier": 1,
+  "bye_week": 7, "adp": "3.05", "projected_points": 428.3,
+  "risk": 2.6, "upside": 9.7,
+  "outlook": "Elite passer with rushing floor." }
+
+// PUT /api/rankings/{position}/{rank}/tier
+{ "tier": 2 }     // must be adjacent (±1) to current tier
+
+// PUT /api/rankings/{position}/{rank}/tag
+{ "tag": "fire" } // one of: "", heart, fire, gem, warning, cross, skull, flag
 
 // PUT /api/rankings/{position}/{rank}/notes
 { "notes": "Elite rushing upside" }
 
-// POST /api/rankings/save-as
+// POST /api/rankings/save-as | POST /api/rankings/load | DELETE /api/rankings/profile/{name}
 { "name": "Mock Draft 1" }
 
-// POST /api/rankings/load
-{ "name": "Mock Draft 1" }
+// POST /api/rankings/rename
+{ "name": "Old Name", "new_name": "New Name" }
 ```
 
 ## Data Model
 
 ### Player (JSON)
+Shape established by PRP-019 (tiered ingest) + PRP-020 (manual-add
+parity). See ADR-011. Seeded and manually-added records share this
+shape exactly.
+
 ```json
 {
   "position_rank": 1,
@@ -183,9 +202,27 @@ All `/api/*` endpoints require Cognito JWT in production.
   "team": "BUF",
   "position": "QB",
   "tier": 1,
-  "notes": ""
+  "bye_week": 7,
+  "adp": "3.05",
+  "projected_points": 428.3,
+  "risk": 2.6,
+  "upside": 9.7,
+  "outlook": "He is him. While technically Allen finished with...",
+  "notes": "",
+  "tag": ""
 }
 ```
+
+Field nullability:
+- `bye_week`: `int | null` (null for unsigned/uncertain players)
+- `adp`: `str` — always present, `""` when missing. Kept as string to
+  preserve trailing zeros in `RR.PP` format (`"3.10"` not `3.1`)
+- `projected_points`, `risk`, `upside`: `float | null` (null for
+  manually-added players who skip the field)
+- `outlook`: `str` — always present, `""` when missing
+- `notes`, `tag`: user-owned, `""` until set
+
+`risk` / `upside` are captured but not currently surfaced in the UI.
 
 ### Rankings Profile
 ```json
@@ -240,20 +277,20 @@ ff-draft-room/
 │   ├── nginx.conf.template
 │   └── ff-draft-room.service    # systemd unit
 ├── data/
-│   ├── players/                 # FantasyPros CSVs (read-only)
-│   └── rankings/                # JSON profiles (local dev only)
+│   ├── players/                 # 2026_{POS}.csv — FF Podcast tiered (read-only)
+│   └── rankings/                # JSON profiles (local dev only, gitignored)
 ├── backend/
 │   ├── main.py                  # FastAPI app, CORS, storage init
 │   ├── middleware/
 │   │   ├── __init__.py
 │   │   └── auth.py              # Cognito JWT verification
 │   ├── routers/
-│   │   └── rankings.py          # /api/rankings/* routes (14 endpoints)
+│   │   └── rankings.py          # /api/rankings/* routes (17 endpoints)
 │   └── utils/
 │       ├── __init__.py
-│       ├── data_loader.py       ✅ 8 tests
-│       ├── rankings.py          ✅ 27 tests — uses StorageBackend
-│       ├── storage.py           ✅ tested — LocalStorage + S3Storage
+│       ├── data_loader.py       ✅ 15 tests
+│       ├── rankings.py          ✅ 47 tests — uses StorageBackend
+│       ├── storage.py           ✅ 15 tests — LocalStorage + S3Storage
 │       └── constants.py        ✅
 ├── frontend/
 │   ├── index.html
@@ -274,10 +311,13 @@ ff-draft-room/
 │           ├── WarRoom.jsx / .css
 │           ├── PositionColumn.jsx / .css
 │           ├── TierGroup.jsx / .css
+│           ├── TierSeparator.jsx / .css       # Draggable boundaries (ADR-009)
 │           ├── PlayerRow.jsx / .css
 │           ├── SearchBar.jsx / .css
-│           ├── NotesDialog.jsx
-│           ├── AddPlayerDialog.jsx
+│           ├── RosterPanel.jsx / .css         # Draft-mode bottom drawer
+│           ├── PlayerDetailDialog.jsx / .css  # Outlook + notes (PRP-021/022)
+│           ├── ContextMenu.jsx / .css         # Right-click menu (PRP-020)
+│           ├── AddPlayerDialog.jsx / .css     # 10-field add (PRP-020)
 │           ├── DeleteConfirmDialog.jsx
 │           ├── SaveAsDialog.jsx
 │           ├── LoadDialog.jsx
@@ -286,11 +326,12 @@ ff-draft-room/
 │           └── ExitDraftConfirmDialog.jsx
 └── tests/
     ├── conftest.py              # storage fixture (LocalStorage)
-    ├── test_data_loader.py      ✅ 8 passing
-    ├── test_rankings.py         ✅ 27 passing
-    ├── test_profile_management.py ✅ 14 passing
-    ├── test_storage.py          ✅ passing
-    └── test_vor.py              # Future
+    ├── test_data_loader.py      ✅ 15 passing
+    ├── test_rankings.py         ✅ 47 passing
+    ├── test_profile_management.py ✅ 21 passing
+    ├── test_storage.py          ✅ 15 passing
+    └── test_vor.py              # 1 skipped placeholder
+    # Total: 98 passing, 1 skipped
 ```
 
 ## Development Phases
@@ -300,7 +341,7 @@ ff-draft-room/
 #### 1a — Foundation ✅ Complete
 - [x] CSV loading + normalization (`data_loader.py`)
 - [x] Rankings CRUD + seed logic (`rankings.py`)
-- [x] 43 tests passing, 84% coverage on utils
+- [x] 98 tests passing — coverage maintained on `backend/utils/`
 
 #### 1b — Stack Migration ✅ Complete
 - [x] `04-init-fastapi-backend.md` — FastAPI backend, 13 endpoints
@@ -312,10 +353,22 @@ ff-draft-room/
 #### 1c — AWS Deployment ✅ Complete
 - [x] `09-init-aws-deploy.md` — S3 storage backend, Cognito auth, EC2 deploy
 
-#### 1d — Polish (next)
-- [ ] `10-init-k-dst.md` — Add K and D/ST columns
-- [ ] Export rankings to CSV
-- [ ] Rename/delete saved profiles
+#### 1d — Polish ✅ Complete
+- [x] `10-init-tier-drag.md` — Draggable tier separators (ADR-009)
+- [x] `11-init-visual-polish.md` — Position-specific accent colors
+- [x] `12-init-team-logos.md` — NFL team logos on rows
+- [x] `13-init-team-gradients.md` — Team color gradients
+- [x] `14-init-profile-rename-delete.md` — Profile rename + delete
+- [x] `15-init-player-tags.md` — 7 tag icons + tag picker
+- [x] `16-init-roster-panel.md` — Draft-mode roster drawer
+- [x] `17-init-fantasy-footballers-import.md` — FF Podcast seed (ADR-010)
+- [x] `18-init-untrack-rankings-and-doc-cleanup.md` — Repo hygiene
+- [x] `19-init-fantasy-footballers-tiered-import.md` — Tiered ingest + 6 new fields
+- [x] `20-init-add-delete-ux-overhaul.md` — Toolbar add + ContextMenu
+- [x] `21-init-player-detail-dialog.md` — Outlook + notes split panel
+- [x] `22-init-player-detail-in-draft-mode.md` — Click-to-detail in Draft Mode
+
+Dropped: K and D/ST (handled separately during drafts), Export to CSV.
 
 ### Phase 2: Live Draft (future)
 - [ ] Snake draft board, mark picks
@@ -346,8 +399,11 @@ PRPs with issues get specific change requests before execution.
 1. **Two environments**: local dev (LocalStorage, no auth) and production (S3, Cognito JWT)
 2. **File size limit: 500 lines max** — split into modules when approaching
 3. **Commit after every feature** — atomic, working commits
-4. **Data source**: FantasyPros half-PPR CSV exports only
+4. **Data source**: Fantasy Footballers Podcast 2026 expert consensus
+   CSVs only (ADR-010, tiered ingest per PRP-019). No approximations,
+   no fallbacks.
 5. **Python imports**: relative to `backend/` — `from utils.constants import ...`
-6. **macOS M1**: Python 3.9+, `from __future__ import annotations`
+6. **Python 3.9+**: `from __future__ import annotations` at top of every backend file
+   for union types (`int | None`, `Path | None`, etc.)
 7. **No credentials in code**: EC2 uses IAM instance role; Cognito IDs are not secrets
 8. **Automate everything**: CDK, deploy scripts, systemd — no manual console steps
