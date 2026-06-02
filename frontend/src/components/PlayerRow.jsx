@@ -70,7 +70,7 @@ const PlayerRow = forwardRef(function PlayerRow({
           title="Click to cycle: undrafted → mine → other"
         />
         <span className="player-rank">{player.position_rank}</span>
-        <span className={nameClasses} style={nameStyle} onContextMenu={handleContextMenu}>
+        <span className={nameClasses} style={nameStyle} onClick={onNameClick} onContextMenu={handleContextMenu}>
           {tagIcon}
           <span className="player-name-text">{nameLabel}</span>
           {logoEl}

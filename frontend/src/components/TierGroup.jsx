@@ -26,7 +26,7 @@ export default function TierGroup({
           onStatusClick={() => onStatusClick(position, player.position_rank)}
           onMoveUp={() => onReorder(position, player.position_rank - 1, player.position_rank)}
           onMoveDown={() => onReorder(position, player.position_rank, player.position_rank + 1)}
-          onNameClick={() => !isDraft && onNotesOpen(player, position)}
+          onNameClick={() => onNotesOpen(player, position)}
           onContextMenuOpen={onContextMenuOpen}
         />
       ))}
