@@ -316,17 +316,21 @@ git pull origin main
 
 ### Tests
 ```bash
-pytest tests/ --cov=backend         # 76 passing
+pytest tests/ --cov=backend         # 98 passing, 1 skipped
 ruff check backend/ tests/          # zero errors
 ```
 
 ### CSV File Naming
 ```
-data/players/QB_2020.csv  through  QB_2025.csv
-data/players/RB_2020.csv  through  RB_2025.csv
-data/players/WR_2020.csv  through  WR_2025.csv
-data/players/TE_2020.csv  through  TE_2025.csv
+data/players/2026_QB.csv
+data/players/2026_RB.csv
+data/players/2026_WR.csv
+data/players/2026_TE.csv
 ```
+Fantasy Footballers Podcast 2026 tiered rankings (ADR-010 / PRP-019).
+Legacy FantasyPros `{POS}_{YEAR}.csv` files (2020–2025) have been
+removed — they were stand-in stat-based data and are no longer the
+seed source.
 
 ### League Defaults
 - 10 teams, half-PPR, standard roster
